@@ -1,0 +1,27 @@
+const { Model } = require('sequelize');
+
+module.exports = (sequelize, DataTypes) => {
+    class Department extends Model {
+        static associate(models) {
+            Department.hasMany(models.JobRole, { foreignKey: 'department_id' });
+            Department.hasMany(models.Employee, { foreignKey: 'department_id' });
+        }
+    }
+
+    Department.init({
+        name: {
+            type: DataTypes.STRING,
+            allowNull: false,
+            unique: true
+        },
+        is_active: {
+            type: DataTypes.BOOLEAN,
+            defaultValue: true
+        }
+    }, {
+        sequelize,
+        modelName: 'Department',
+        paranoid: true // Enable soft deletes
+    });
+    return Department;
+};

@@ -95,12 +95,10 @@ module.exports = (sequelize, DataTypes) => {
             as: 'Signatures'
         });
 
-        /*
-                FormSubmission.hasMany(models.FormApproval, {
-                    foreignKey: 'submission_id',
-                    as: 'Approvals'
-                });
-        */
+        FormSubmission.hasMany(models.FormApproval, {
+            foreignKey: 'submission_id',
+            as: 'Approvals'
+        });
 
         FormSubmission.hasMany(models.FormAttachment, {
             foreignKey: 'submission_id',
@@ -112,13 +110,12 @@ module.exports = (sequelize, DataTypes) => {
             as: 'AuditTrail'
         });
 
-        /*
-                FormSubmission.belongsTo(models.OnboardingToken, {
-                    foreignKey: 'onboarding_token',
-                    targetKey: 'token',
-                    as: 'OnboardingToken'
-                });
-        */
+        FormSubmission.belongsTo(models.OnboardingToken, {
+            foreignKey: 'onboarding_token',
+            targetKey: 'token',
+            as: 'OnboardingToken',
+            constraints: false
+        });
     };
 
     return FormSubmission;

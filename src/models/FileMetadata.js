@@ -116,12 +116,10 @@ module.exports = (sequelize, DataTypes) => {
             as: 'Employee'
         });
 
-        /*
-                FileMetadata.belongsTo(models.StorageServer, {
-                    foreignKey: 'server_id',
-                    as: 'StorageServer'
-                });
-        */
+        FileMetadata.belongsTo(models.StorageServer, {
+            foreignKey: 'server_id',
+            as: 'StorageServer'
+        });
 
         FileMetadata.belongsTo(models.User, {
             foreignKey: 'uploaded_by',
@@ -139,13 +137,12 @@ module.exports = (sequelize, DataTypes) => {
             as: 'Versions'
         });
 
-        /*
-                FileMetadata.belongsTo(models.OnboardingToken, {
-                    foreignKey: 'onboarding_token',
-                    targetKey: 'token',
-                    as: 'OnboardingToken'
-                });
-        */
+        FileMetadata.belongsTo(models.OnboardingToken, {
+            foreignKey: 'onboarding_token',
+            targetKey: 'token',
+            as: 'OnboardingToken',
+            constraints: false
+        });
     };
 
     return FileMetadata;

@@ -56,5 +56,9 @@ module.exports = (sequelize, DataTypes) => {
         ]
     });
 
+    StorageServer.associate = (models) => {
+        StorageServer.hasMany(models.DepartmentStorage, { foreignKey: 'server_id', as: 'DepartmentStorage' });
+    };
+
     return StorageServer;
 };

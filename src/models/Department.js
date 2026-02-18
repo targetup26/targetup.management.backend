@@ -5,6 +5,8 @@ module.exports = (sequelize, DataTypes) => {
         static associate(models) {
             Department.hasMany(models.JobRole, { foreignKey: 'department_id' });
             Department.hasMany(models.Employee, { foreignKey: 'department_id' });
+            Department.hasMany(models.ChatRoom, { foreignKey: 'department_id', as: 'ChatRooms' });
+            Department.hasOne(models.DepartmentStorage, { foreignKey: 'department_id', as: 'DepartmentStorage' });
         }
     }
 

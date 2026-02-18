@@ -11,6 +11,10 @@ module.exports = async (req, res, next) => {
         }
 
         if (!req.user.employee_id) {
+            // Allow Super Admins to bypass employee profile requirement for admin routes
+            if (req.user.permissions && req.user.permissions.includes('admin.access')) {
+                return next();
+            }
             return res.status(403).json({
                 error: 'Employee profile not linked',
                 onboarding_required: true

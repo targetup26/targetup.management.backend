@@ -1,9 +1,12 @@
-const { Department, JobRole } = require('../models');
+const { Department, JobRole, Employee } = require('../models');
 
 exports.getAll = async (req, res) => {
     try {
         const data = await Department.findAll({
-            include: [{ model: JobRole, attributes: ['id', 'name'] }]
+            include: [
+                { model: JobRole, attributes: ['id', 'name'] },
+                { model: Employee, attributes: ['id', 'full_name'] }
+            ]
         });
         res.json(data);
     } catch (error) {

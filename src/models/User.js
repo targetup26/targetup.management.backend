@@ -12,6 +12,11 @@ module.exports = (sequelize, DataTypes) => {
                 as: 'Roles',
                 foreignKey: 'user_id'
             });
+            User.hasOne(models.UserPresence, { foreignKey: 'user_id', as: 'Presence' });
+            User.hasOne(models.UserProfile, { foreignKey: 'user_id', as: 'Profile' });
+            User.hasMany(models.ChatRoom, { foreignKey: 'owner_id', as: 'OwnedRooms' });
+            User.hasMany(models.ChatRoomMember, { foreignKey: 'user_id', as: 'Memberships' });
+            User.hasMany(models.ChatMessage, { foreignKey: 'sender_id', as: 'Messages' });
         }
     }
 

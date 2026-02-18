@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const { User } = require('../models');
+const { User, Role, Permission } = require('../models');
 
 /**
  * Authentication Middleware
@@ -14,13 +14,38 @@ module.exports = async (req, res, next) => {
         }
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const user = await User.findByPk(decoded.id);
+        const user = await User.findByPk(decoded.id, {
+            include: [{
+                model: Role,
+                as: 'Roles',
+                include: [{
+                    model: Permission,
+                    as: 'Permissions',
+                    through: { attributes: [] }
+                }]
+            }]
+        });
 
         if (!user) {
             return res.status(401).json({ error: 'User not found' });
         }
 
-        req.user = user;
+        // Flatten permissions for easy access
+        const permissions = new Set();
+        if (user.Roles) {
+            user.Roles.forEach(role => {
+                if (role.Permissions) {
+                    role.Permissions.forEach(p => permissions.add(p.key));
+                }
+            });
+        }
+
+        // Convert Sequelize instance to JSON and attach permissions
+        const userJSON = user.toJSON();
+        userJSON.permissions = Array.from(permissions);
+
+        // Attach to request
+        req.user = userJSON;
         next();
     } catch (error) {
         console.error('Auth middleware error:', error);

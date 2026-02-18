@@ -57,7 +57,7 @@ io.on('connection', (socket) => {
 const PORT = process.env.PORT || 3001;
 const HOST = process.env.SERVER_IP || '0.0.0.0';
 
-db.sequelize.sync({ alter: true })
+db.sequelize.sync({ alter: false })
     .then(() => {
         console.log('Database synced');
         server.listen(PORT, HOST, () => {

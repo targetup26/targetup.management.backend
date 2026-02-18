@@ -29,6 +29,8 @@ const taxonomyController = require('../controllers/taxonomyController');
 const auth = require('../middleware/auth');
 const onboardingGuard = require('../middleware/onboardingGuard');
 const requirePermission = require('../middleware/requirePermission');
+const upload = require('../middleware/upload');
+const chatRateLimiter = require('../middleware/rateLimiter');
 
 
 // Device Routes
@@ -125,7 +127,7 @@ router.delete('/users/:id', auth, requirePermission('users.delete'), userControl
 router.post('/storage/upload',
     auth,
     requirePermission('storage.upload.self'),
-    // upload.single('file'), // [MISSING MULTER]
+    upload.single('file'),
     storageController.uploadFile
 );
 
@@ -209,7 +211,7 @@ router.get('/chat/rooms/:id/messages',
 router.post('/chat/messages',
     auth,
     requirePermission('chat.write'),
-    // chatRateLimiter,  // [MISSING] RATE LIMIT: 10 messages/min
+    chatRateLimiter,
     chatController.sendMessage
 );
 

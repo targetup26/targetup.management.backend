@@ -57,17 +57,33 @@ async function seed() {
         console.log('✅ Shift: Morning A');
 
         // 5. Create Employee
-        const [emp, empCreated] = await db.Employee.findOrCreate({
+        // Check if exists first (including soft-deleted) to avoid duplicate error on unique keys
+        let emp = await db.Employee.findOne({
             where: { code: 'EMP001' },
-            defaults: {
+            paranoid: false
+        });
+
+        if (!emp) {
+            emp = await db.Employee.create({
+                code: 'EMP001',
                 full_name: 'Ahmed Developer',
                 email: 'ahmed@targetup.com',
                 department_id: dept.id,
                 job_role_id: role.id,
                 shift_id: shift.id
+            });
+            console.log('✅ Employee: Ahmed Developer (EMP001) created');
+        } else {
+            // Restore if deleted
+            if (emp.deletedAt) {
+                await emp.restore();
+                console.log('✅ Employee: Ahmed Developer (EMP001) restored');
             }
-        });
-        console.log('✅ Employee: Ahmed Developer (EMP001)');
+            // Update role if needed
+            emp.job_role_id = role.id;
+            await emp.save();
+            console.log('✅ Employee: Ahmed Developer (EMP001) updated');
+        }
 
         console.log('\n--- SEEDING COMPLETE ---');
         console.log('Login Credentials:');

@@ -48,10 +48,10 @@ module.exports = async (req, res, next) => {
         req.user = userJSON;
         next();
     } catch (error) {
-        console.error('Auth middleware error:', error);
         if (error.name === 'TokenExpiredError') {
             return res.status(401).json({ error: 'Session expired. Please log in again.' });
         }
+        console.error('Auth middleware error:', error);
         res.status(401).json({ error: 'Invalid token' });
     }
 };

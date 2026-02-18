@@ -8,6 +8,7 @@ module.exports = (sequelize, DataTypes) => {
             Employee.belongsTo(models.Shift, { foreignKey: 'shift_id' });
             Employee.hasMany(models.AttendanceEntry, { foreignKey: 'employee_id' });
             Employee.hasMany(models.Device, { foreignKey: 'employee_id' });
+            Employee.hasOne(models.User, { foreignKey: 'employee_id' });
         }
     }
 

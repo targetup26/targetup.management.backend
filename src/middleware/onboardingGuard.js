@@ -10,9 +10,14 @@ module.exports = async (req, res, next) => {
             return res.status(401).json({ error: 'Authentication required' });
         }
 
-        const employee = await Employee.findOne({
-            where: { user_id: req.user.id }
-        });
+        if (!req.user.employee_id) {
+            return res.status(403).json({
+                error: 'Employee profile not linked',
+                onboarding_required: true
+            });
+        }
+
+        const employee = await Employee.findByPk(req.user.employee_id);
 
         if (!employee) {
             return res.status(403).json({

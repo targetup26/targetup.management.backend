@@ -33,7 +33,13 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.INTEGER,
             defaultValue: 0
         },
-        error_message: DataTypes.TEXT
+        error_message: DataTypes.TEXT,
+        started_at: DataTypes.DATE,
+        completed_at: DataTypes.DATE,
+        retry_count: {
+            type: DataTypes.INTEGER,
+            defaultValue: 0
+        }
     }, {
         sequelize,
         modelName: 'LeadJob',

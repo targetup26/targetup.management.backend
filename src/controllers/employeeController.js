@@ -69,8 +69,33 @@ exports.getAll = async (req, res) => {
 
 exports.getOne = async (req, res) => {
     try {
+        const { Department, JobRole, Shift, FormSubmission, FormTemplate, FormAttachment, FileMetadata, BreakLog, AuditLog, User } = require('../models');
+
         const data = await Employee.findByPk(req.params.id, {
-            include: [Department, JobRole, Shift]
+            include: [
+                Department,
+                JobRole,
+                Shift,
+                User,
+                {
+                    model: FormSubmission,
+                    as: 'Submissions',
+                    include: [
+                        { model: FormTemplate, as: 'Template' },
+                        {
+                            model: FormAttachment,
+                            as: 'Attachments',
+                            include: [{ model: FileMetadata, as: 'FileMetadata' }]
+                        }
+                    ]
+                },
+                { model: BreakLog },
+                {
+                    model: AuditLog,
+                    as: 'ActionHistory',
+                    include: [{ model: User }]
+                }
+            ]
         });
         if (!data) return res.status(404).json({ error: 'Employee not found' });
         res.json(data);

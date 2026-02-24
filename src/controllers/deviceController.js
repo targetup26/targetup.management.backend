@@ -62,16 +62,26 @@ exports.deleteDevice = async (req, res) => {
 
 exports.registerDevice = async (req, res) => {
     try {
-        const { name, ip_address, mac_address, employee_id } = req.body;
+        const { name, ip_address, mac_address, employee_id, device_fingerprint } = req.body;
 
-        // Check if device already exists by MAC address
-        let device = await Device.findOne({ where: { mac_address } });
+        // Try to find device by MAC or fingerprint
+        let device = null;
+        if (mac_address) device = await Device.findOne({ where: { mac_address } });
 
         if (device) {
-            // Update existing device
+            // If device is already linked to a DIFFERENT employee — reject with clear message
+            if (device.employee_id && employee_id && device.employee_id !== employee_id) {
+                return res.status(409).json({
+                    success: false,
+                    error: 'This device is already linked to another account. Please contact your administrator.',
+                    device_conflict: true
+                });
+            }
+
+            // Same employee or unlinked — update normally
             device.name = name || device.name;
             device.ip_address = ip_address || device.ip_address;
-            device.employee_id = employee_id || device.employee_id;
+            if (employee_id && !device.employee_id) device.employee_id = employee_id;
             device.last_seen_at = new Date();
             await device.save();
         } else {
@@ -91,6 +101,32 @@ exports.registerDevice = async (req, res) => {
         res.status(500).json({ success: false, error: error.message });
     }
 };
+
+
+exports.updateDevice = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name, ip_address, mac_address, employee_id, is_active } = req.body;
+
+        const device = await Device.findByPk(id);
+        if (!device) return res.status(404).json({ error: 'Device not found' });
+
+        if (name !== undefined) device.name = name;
+        if (ip_address !== undefined) device.ip_address = ip_address;
+        if (mac_address !== undefined) device.mac_address = mac_address;
+        if (employee_id !== undefined) device.employee_id = employee_id;
+        if (is_active !== undefined) device.is_active = is_active;
+
+        await device.save();
+
+        res.json({ success: true, device });
+    } catch (error) {
+        console.error('updateDevice error:', error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+
 
 
 exports.scanNetwork = async (req, res) => {

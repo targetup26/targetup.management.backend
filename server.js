@@ -27,7 +27,8 @@ app.use((req, res, next) => {
 // Middleware
 app.use(cors());
 app.use(helmet({
-    crossOriginEmbedderPolicy: false
+    crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 app.use(morgan('dev'));
 app.use(express.json());

@@ -17,30 +17,31 @@ const leadController = {
             const data = req.body;
             const user_id = req.user.id;
 
-            // 1. Validate Input
+            // 1. Validate & Sanitize Input
             const validation = LeadExtractionDTO.validate(data);
             if (!validation.isValid) {
                 return res.status(400).json({ success: false, errors: validation.errors });
             }
 
+            const sanitizedData = LeadExtractionDTO.sanitize(data);
+
             // 2. Create Job Record
+
             const job = await LeadJob.create({
                 user_id,
-                status: 'pending',
-                business_type: data.business_type,
-                city: data.city,
-                state: data.state,
-                country: data.country
+                status: 'PENDING',
+                source: 'MANUAL',
+                query: sanitizedData
             });
 
             // 3. Call Lead Engine Microservice
             try {
                 await axios.post(`${config.leadEngine.url}/internal/start-search`, {
-                    searchId: job.id,
-                    keyword: data.business_type,
-                    city: data.city,
-                    limit: parseInt(data.max_results) || 50,
-                    country: data.country || 'us',
+                    searchId: String(job.id), // Sent as string to avoid bullmq jobId.startsWith crash
+                    keyword: sanitizedData.business_type,
+                    city: sanitizedData.city,
+                    limit: sanitizedData.max_results,
+                    country: sanitizedData.country,
                     source: 'sales-portal'
                 }, {
                     headers: {
@@ -147,7 +148,7 @@ const leadController = {
             res.status(500).json({ success: false, error: error.message });
         }
     },
-    /**
+    /*
      * Agent Heartbeat (Sales Time Tracking)
      * POST /api/leads/heartbeat
      */

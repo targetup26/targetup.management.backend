@@ -37,7 +37,9 @@ const chatRateLimiter = require('../middleware/rateLimiter');
 router.get('/devices/scan', deviceController.scanNetwork);
 router.get('/devices', deviceController.getDevices);
 router.post('/devices', deviceController.addDevice);
+router.put('/devices/:id', deviceController.updateDevice);
 router.delete('/devices/:id', deviceController.deleteDevice);
+
 
 // Auth Routes
 router.post('/auth/register', authController.register);
@@ -98,6 +100,10 @@ router.get('/admin/settings', auth, requirePermission('admin.settings.manage'), 
 router.get('/admin/settings/:key', auth, requirePermission('admin.settings.manage'), globalSettingsController.getSetting);
 router.put('/admin/settings/:key', auth, requirePermission('admin.settings.manage'), globalSettingsController.updateSetting);
 router.delete('/admin/settings/:key', auth, requirePermission('admin.settings.manage'), globalSettingsController.deleteSetting);
+
+// Audit Logs
+router.get('/admin/audit-logs', auth, requirePermission('admin.audit-logs.manage'), auditController.getLogs);
+router.get('/admin/audit-logs/stats', auth, requirePermission('admin.audit-logs.manage'), auditController.getLogStats);
 
 // router.get('/admin/ip-rules', auth, requirePermission('admin.ip-rules.manage'), ipRuleController.getAllRules); // [REMOVED]
 // router.post('/admin/ip-rules', auth, requirePermission('admin.ip-rules.manage'), ipRuleController.createRule); // [REMOVED]

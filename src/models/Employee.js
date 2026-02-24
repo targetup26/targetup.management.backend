@@ -10,6 +10,15 @@ module.exports = (sequelize, DataTypes) => {
             Employee.hasMany(models.BreakLog, { foreignKey: 'employee_id' });
             Employee.hasMany(models.Device, { foreignKey: 'employee_id' });
             Employee.hasOne(models.User, { foreignKey: 'employee_id' });
+            // Missing associations for dossier display
+            Employee.hasMany(models.FormSubmission, { foreignKey: 'employee_id', as: 'Submissions' });
+            Employee.hasMany(models.AuditLog, {
+                foreignKey: 'entity_id',
+                sourceKey: 'id',
+                scope: { entity_type: 'EMPLOYEE' },
+                as: 'ActionHistory',
+                constraints: false
+            });
         }
     }
 

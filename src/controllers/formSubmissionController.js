@@ -45,6 +45,45 @@ const formSubmissionController = {
             console.error('[FormSubmissionController] submitForm error:', error);
             res.status(500).json({ success: false, error: 'Failed to submit form' });
         }
+    },
+
+    /**
+     * Create an Employee from an approved Join Form
+     * Note: This assumes submission is a FormSubmission instance
+     */
+    createEmployeeFromJoinForm: async (submission) => {
+        try {
+            const formData = typeof submission.form_data === 'string' ? JSON.parse(submission.form_data) : submission.form_data;
+
+            // Extract core fields, defaulting if missing
+            const fullName = formData.full_name || 'Unknown Employee';
+            const email = formData.email_address || formData.email || null;
+            const phone = formData.mobile || formData.phone || null;
+
+            // Generate a unique code if none provided in form
+            const code = `EMP-${Date.now().toString().slice(-6)}`;
+
+            const employeeData = {
+                code,
+                full_name: fullName,
+                email,
+                phone,
+                is_active: true,
+                department_id: formData.department_id || null,
+                job_role_id: formData.job_role_id || null,
+                shift_id: formData.shift_id || null
+            };
+
+            const employee = await Employee.create(employeeData);
+
+            // Connect submission to new employee
+            await submission.update({ employee_id: employee.id });
+
+            return employee;
+        } catch (error) {
+            console.error('[FormSubmissionController] createEmployeeFromJoinForm error:', error);
+            throw error; // Let admin controller handle it
+        }
     }
 };
 

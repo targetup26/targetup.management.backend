@@ -22,7 +22,8 @@ const categoryRepository = {
 
         return await Category.findAll({
             attributes: [
-                'id', 'name', 'slug', 'lead_count', 'created_at', 'updated_at',
+                'id', 'name', 'slug', 'created_at', 'updated_at',
+                [sequelize.literal('(SELECT COUNT(*) FROM leads WHERE leads.category_id = Category.id)'), 'lead_count'],
                 [sequelize.literal('(SELECT COUNT(*) FROM subcategories WHERE subcategories.category_id = Category.id)'), 'subcategory_count'],
                 [sequelize.literal('(SELECT SUM(exported_count) FROM lead_exports WHERE lead_exports.category_id = Category.id)'), 'total_exports'],
                 [sequelize.literal('(SELECT MAX(exported_at) FROM lead_exports WHERE lead_exports.category_id = Category.id)'), 'last_exported_at']
@@ -35,7 +36,8 @@ const categoryRepository = {
         const { sequelize } = require('../../models');
         return await Category.findByPk(id, {
             attributes: [
-                'id', 'name', 'slug', 'lead_count', 'created_at', 'updated_at',
+                'id', 'name', 'slug', 'created_at', 'updated_at',
+                [sequelize.literal('(SELECT COUNT(*) FROM leads WHERE leads.category_id = Category.id)'), 'lead_count'],
                 [sequelize.literal('(SELECT COUNT(*) FROM subcategories WHERE subcategories.category_id = Category.id)'), 'subcategory_count'],
                 [sequelize.literal('(SELECT SUM(exported_count) FROM lead_exports WHERE lead_exports.category_id = Category.id)'), 'total_exports'],
                 [sequelize.literal('(SELECT MAX(exported_at) FROM lead_exports WHERE lead_exports.category_id = Category.id)'), 'last_exported_at']

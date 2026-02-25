@@ -3,8 +3,9 @@ const { Model } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
     class LeadExport extends Model {
         static associate(models) {
-            LeadExport.belongsTo(models.User, { foreignKey: 'user_id' });
-            LeadExport.belongsTo(models.Category, { foreignKey: 'category_id' });
+            LeadExport.belongsTo(models.User, { foreignKey: 'user_id', as: 'Exporter' });
+            LeadExport.belongsTo(models.Category, { foreignKey: 'category_id', as: 'Category' });
+            LeadExport.belongsTo(models.Subcategory, { foreignKey: 'subcategory_id', as: 'Subcategory' });
         }
     }
 

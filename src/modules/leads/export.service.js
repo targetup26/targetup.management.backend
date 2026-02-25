@@ -67,7 +67,7 @@ const exportService = {
             category_id: filters.categoryId || null,
             subcategory_id: filters.subcategoryId || null,
             file_path: `/exports/${filename}`,
-            record_count: leads.length,
+            exported_count: leads.length,
             status: 'COMPLETED'
         });
 

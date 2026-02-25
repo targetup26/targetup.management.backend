@@ -100,7 +100,7 @@ const leadController = {
             res.json({
                 success: true,
                 status: job.status,
-                total_results: job.total_results,
+                leads_extracted: job.leads_extracted,
                 created_at: job.created_at
             });
         } catch (error) {
@@ -117,8 +117,9 @@ const leadController = {
             const { city, category, job_id } = req.query;
             const where = {};
 
-            if (job_id) where.extraction_job_id = job_id;
+            if (job_id) where.lead_job_id = job_id;
             if (city) where.city = city;
+            if (category) where.category_id = category;
 
             const leads = await Lead.findAll({
                 where,

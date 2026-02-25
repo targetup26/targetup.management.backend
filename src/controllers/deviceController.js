@@ -63,6 +63,7 @@ exports.deleteDevice = async (req, res) => {
 exports.registerDevice = async (req, res) => {
     try {
         const { name, ip_address, mac_address, employee_id, device_fingerprint } = req.body;
+        const empId = employee_id ? parseInt(employee_id) : null;
 
         // Try to find device by MAC or fingerprint
         let device = null;
@@ -70,7 +71,7 @@ exports.registerDevice = async (req, res) => {
 
         if (device) {
             // If device is already linked to a DIFFERENT employee — reject with clear message
-            if (device.employee_id && employee_id && device.employee_id !== employee_id) {
+            if (device.employee_id && empId && device.employee_id !== empId) {
                 return res.status(409).json({
                     success: false,
                     error: 'This device is already linked to another account. Please contact your administrator.',
@@ -81,7 +82,7 @@ exports.registerDevice = async (req, res) => {
             // Same employee or unlinked — update normally
             device.name = name || device.name;
             device.ip_address = ip_address || device.ip_address;
-            if (employee_id && !device.employee_id) device.employee_id = employee_id;
+            if (empId && !device.employee_id) device.employee_id = empId;
             device.last_seen_at = new Date();
             await device.save();
         } else {
@@ -90,7 +91,7 @@ exports.registerDevice = async (req, res) => {
                 name,
                 ip_address,
                 mac_address,
-                employee_id,
+                employee_id: empId,
                 last_seen_at: new Date()
             });
         }
@@ -114,7 +115,7 @@ exports.updateDevice = async (req, res) => {
         if (name !== undefined) device.name = name;
         if (ip_address !== undefined) device.ip_address = ip_address;
         if (mac_address !== undefined) device.mac_address = mac_address;
-        if (employee_id !== undefined) device.employee_id = employee_id;
+        if (employee_id !== undefined) device.employee_id = employee_id ? parseInt(employee_id) : null;
         if (is_active !== undefined) device.is_active = is_active;
 
         await device.save();
@@ -267,7 +268,8 @@ exports.scanNetwork = async (req, res) => {
                                 }
                                 await match.save();
 
-                                // Auto-Attendance Logic: If device is bound to an employee, check them in
+                                // Auto-Attendance Logic: DISABLED as per user request
+                                /*
                                 if (match.employee_id) {
                                     const today = new Date().toISOString().split('T')[0];
                                     const existingEntry = await AttendanceEntry.findOne({
@@ -294,6 +296,7 @@ exports.scanNetwork = async (req, res) => {
                                         console.log(`Auto-clocked in employee ${match.employee_id} via device ${match.name}`);
                                     }
                                 }
+                                */
                             }
                         }
                     } catch (dbError) {

@@ -11,23 +11,28 @@ module.exports = (sequelize, DataTypes) => {
         name: DataTypes.STRING, // e.g., "Morning A", "Night B"
         start_time: {
             type: DataTypes.TIME,
-            allowNull: false
+            allowNull: false,
+            field: 'start_time'
         },
         end_time: {
             type: DataTypes.TIME,
-            allowNull: false
+            allowNull: false,
+            field: 'end_time'
         },
         late_threshold_minutes: {
             type: DataTypes.INTEGER,
-            defaultValue: 15
+            defaultValue: 15,
+            field: 'late_threshold_minutes'
         },
         early_leave_threshold_minutes: {
             type: DataTypes.INTEGER,
-            defaultValue: 15
+            defaultValue: 15,
+            field: 'early_leave_threshold_minutes'
         },
         is_active: {
             type: DataTypes.BOOLEAN,
-            defaultValue: true
+            defaultValue: true,
+            field: 'is_active'
         }
     }, {
         sequelize,

@@ -49,6 +49,7 @@ module.exports = (sequelize, DataTypes) => {
     }, {
         sequelize,
         modelName: 'AttendanceEntry',
+        tableName: 'attendanceentries',
         paranoid: false // STRICTLY NO SOFT DELETE - Use is_active
     });
     return AttendanceEntry;

@@ -67,6 +67,8 @@ db.sequelize.sync({ alter: false })
             console.log(`Server running on http://${HOST}:${PORT}`);
 
             // Background Task: Auto-Scan Network every 3 minutes
+            // Note: Auto-clock-in logic is disabled in deviceController.js, 
+            // but we keep the scan to track online/offline status of devices.
             const deviceController = require('./src/controllers/deviceController');
             const SCAN_INTERVAL = 3 * 60 * 1000; // 3 Minutes
 

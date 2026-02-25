@@ -23,6 +23,7 @@ module.exports = (sequelize, DataTypes) => {
     }, {
         sequelize,
         modelName: 'Department',
+        tableName: 'departments',
         paranoid: true // Enable soft deletes
     });
     return Department;

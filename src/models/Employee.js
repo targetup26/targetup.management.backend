@@ -30,19 +30,27 @@ module.exports = (sequelize, DataTypes) => {
         },
         full_name: {
             type: DataTypes.STRING,
-            allowNull: false
+            allowNull: false,
+            field: 'full_name'
         },
         email: DataTypes.STRING,
         phone: DataTypes.STRING,
         is_active: {
             type: DataTypes.BOOLEAN,
-            defaultValue: true
+            defaultValue: true,
+            field: 'is_active'
+        },
+        onboarding_status: {
+            type: DataTypes.STRING,
+            defaultValue: 'COMPLETED',
+            field: 'onboarding_status'
         }
         // No Salary Fields as per requirement
     }, {
         sequelize,
         modelName: 'Employee',
-        paranoid: true
+        paranoid: true,
+        underscored: false
     });
     return Employee;
 };

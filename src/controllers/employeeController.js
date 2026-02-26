@@ -35,16 +35,43 @@ exports.getAll = async (req, res) => {
             if (req.query.join_date_end) where.hire_date[Op.lte] = req.query.join_date_end;
         }
 
-        const { count, rows } = await Employee.findAndCountAll({
+        const isPaginated = req.query.page !== undefined;
+
+        if (isPaginated) {
+            const { count, rows } = await Employee.findAndCountAll({
+                where,
+                limit,
+                offset,
+                order: [['createdAt', 'DESC']],
+                include: [
+                    { model: Department, attributes: ['name'] },
+                    { model: JobRole, attributes: ['name'] },
+                    { model: Shift, attributes: ['name', 'start_time', 'end_time'] },
+                    {
+                        model: require('../models').User,
+                        attributes: ['id', 'username', 'role']
+                    }
+                ]
+            });
+
+            return res.json({
+                data: rows,
+                meta: {
+                    total: count,
+                    page,
+                    limit,
+                    last_page: Math.ceil(count / limit)
+                }
+            });
+        }
+
+        const data = await Employee.findAll({
             where,
-            limit,
-            offset,
             order: [['createdAt', 'DESC']],
             include: [
                 { model: Department, attributes: ['name'] },
                 { model: JobRole, attributes: ['name'] },
                 { model: Shift, attributes: ['name', 'start_time', 'end_time'] },
-                // Include user to check if they have login access
                 {
                     model: require('../models').User,
                     attributes: ['id', 'username', 'role']
@@ -52,15 +79,7 @@ exports.getAll = async (req, res) => {
             ]
         });
 
-        res.json({
-            data: rows,
-            meta: {
-                total: count,
-                page,
-                limit,
-                last_page: Math.ceil(count / limit)
-            }
-        });
+        res.json(data);
     } catch (error) {
         console.error('Get Employees Error:', error);
         res.status(500).json({ error: error.message });

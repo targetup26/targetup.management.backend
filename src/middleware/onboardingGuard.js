@@ -11,8 +11,10 @@ module.exports = async (req, res, next) => {
         }
 
         if (!req.user.employee_id) {
-            // Allow Super Admins to bypass employee profile requirement for admin routes
-            if (req.user.permissions && req.user.permissions.includes('admin.access')) {
+            // Allow Admins to bypass employee profile requirement
+            if ((req.user.permissions && req.user.permissions.includes('admin.access')) ||
+                req.user.role === 'ADMIN' ||
+                req.user.role === 'SUPER_ADMIN') {
                 return next();
             }
             return res.status(403).json({

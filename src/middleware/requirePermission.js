@@ -11,27 +11,24 @@ module.exports = (permissionName) => {
                 return res.status(401).json({ error: 'Authentication required' });
             }
 
-            // Admin bypass
-            if (req.user.role === 'ADMIN' || req.user.role === 'SUPER_ADMIN') {
+            // Admin bypass (check primary role and roles array)
+            const isAdmin = req.user.role === 'ADMIN' ||
+                req.user.role === 'SUPER_ADMIN' ||
+                req.user.roles?.includes('ADMIN') ||
+                req.user.roles?.includes('SUPER_ADMIN');
+
+            if (isAdmin) {
                 return next();
             }
 
-            // Get user's role
-            const role = await Role.findOne({
-                where: { name: req.user.role },
-                include: [{
-                    model: Permission,
-                    as: 'Permissions',
-                    through: { attributes: [] },
-                    where: { name: permissionName },
-                    required: false
-                }]
-            });
+            // Check flattened permissions from req.user (already loaded by auth middleware)
+            const hasPermission = req.user.permissions && req.user.permissions.includes(permissionName);
 
-            if (!role || !role.Permissions || role.Permissions.length === 0) {
+            if (!hasPermission) {
                 return res.status(403).json({
                     error: 'Permission denied',
-                    required_permission: permissionName
+                    required_permission: permissionName,
+                    message: `Checking for permission: ${permissionName}`
                 });
             }
 

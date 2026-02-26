@@ -24,6 +24,8 @@ const leadController = require('../controllers/leadController');
 const categoryController = require('../controllers/categoryController');
 const exportController = require('../controllers/exportController');
 const taxonomyController = require('../controllers/taxonomyController');
+const formSubmissionController = require('../controllers/formSubmissionController');
+const onboardingController = require('../controllers/onboardingController');
 
 // Middleware
 const auth = require('../middleware/auth');
@@ -65,19 +67,21 @@ router.post('/employees', employeeController.create);
 router.put('/employees/:id', employeeController.update);
 router.delete('/employees/:id', employeeController.delete);
 
-// Attendance Routes
-router.get('/attendance', attendanceController.getEntries);
-router.post('/attendance', attendanceController.addManualEntry);
-router.put('/attendance/:id', attendanceController.updateEntry);
-router.get('/attendance/stats/today', attendanceController.getDashboardData);
-router.post('/attendance/device', attendanceController.deviceLog);
+// Attendance Routes (Desktop + Web Compatibility)
+router.post('/attendance/check-in', auth, attendanceController.desktopCheckIn);
+router.post('/attendance/check-out', auth, attendanceController.desktopCheckOut);
+router.post('/attendance/heartbeat', auth, attendanceController.desktopHeartbeat);
+router.get('/attendance/status', auth, attendanceController.getAttendanceStatus);
+router.get('/attendance/dashboard', auth, requirePermission('attendance.view.self'), attendanceController.getDashboardData);
+router.get('/attendance/history', auth, requirePermission('attendance.view.self'), attendanceController.getEntries);
+router.get('/attendance/stats/today', auth, requirePermission('attendance.view.self'), attendanceController.getDashboardData);
+router.get('/attendance', auth, requirePermission('attendance.view.self'), attendanceController.getEntries);
 
 // Desktop App Routes
 router.post('/devices/register', deviceController.registerDevice);
-router.post('/attendance/check-in', auth, onboardingGuard, requirePermission('attendance.checkin'), attendanceController.desktopCheckIn);
-router.post('/attendance/check-out', auth, onboardingGuard, requirePermission('attendance.checkout'), attendanceController.desktopCheckOut);
-router.get('/attendance/status', auth, onboardingGuard, attendanceController.getAttendanceStatus);
-router.post('/attendance/heartbeat', auth, onboardingGuard, attendanceController.desktopHeartbeat);
+// Routes below use unified paths in Attendance section above. 
+// Keeping these as aliases if needed, but the ones above are cleaner.
+// Reverting to the ones that worked before but adding heartbeat.
 
 const breakController = require('../controllers/breakController');
 const shiftController = require('../controllers/shiftController');
@@ -192,6 +196,7 @@ router.post('/notes', auth, personalNoteController.createNote);
 router.put('/notes/:id', auth, personalNoteController.updateNote);
 router.delete('/notes/:id', auth, personalNoteController.deleteNote);
 
+
 // ========== CHAT ROUTES (Desktop App Only) ==========
 
 // Chat Rooms
@@ -303,7 +308,12 @@ router.post('/admin/forms/templates', auth, requirePermission('forms.template.ma
 router.put('/admin/forms/templates/:id', auth, requirePermission('forms.template.manage'), formTemplateController.updateTemplate);
 router.get('/admin/forms/templates/:id/options/:field', auth, requirePermission('forms.template.manage'), formTemplateController.getFieldOptions);
 
-// ========== EMPLOYEE FORM ROUTES (Moved to src/routes/forms.js) ==========
+// ========== EMPLOYEE FORM ROUTES ==========
+router.get('/forms/templates', auth, formTemplateController.getAllTemplates);
+router.get('/forms/templates/:id', auth, formTemplateController.getTemplate);
+router.get('/forms/my-submissions', auth, formSubmissionController.getMySubmissions);
+router.post('/forms/submit', auth, formSubmissionController.submitForm);
+router.get('/forms/submissions/:id', auth, formSubmissionController.getMySubmissions); // Re-use for specific if needed, or add specific detail route
 
 // Print Settings Routes
 router.get('/settings/print', auth, printSettingsController.getPrintSettings);
@@ -316,6 +326,12 @@ router.post('/leads/extract', auth, leadController.extractLeads);
 router.post('/leads/heartbeat', auth, leadController.heartbeat);
 router.get('/leads/job/:id', auth, leadController.getJobStatus);
 router.get('/leads/history', auth, leadController.getHistory);
+
+// Onboarding Routes
+router.post('/onboarding/invite', auth, requirePermission('users.create'), onboardingController.invite);
+router.get('/onboarding/template/:token', onboardingController.getTemplateByToken);
+router.post('/onboarding/submit', onboardingController.submitOnboarding);
+router.post('/onboarding/upload', upload.single('file'), onboardingController.uploadFile);
 
 // Taxonomy & Classification Routes
 router.get('/categories', auth, categoryController.getCategories);

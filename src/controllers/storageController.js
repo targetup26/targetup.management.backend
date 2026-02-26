@@ -433,6 +433,8 @@ exports.listFiles = async (req, res) => {
         // Apply permission-based filtering
         const isHighLevel = req.user.permissions.includes('storage.view.all') ||
             req.user.permissions.includes('admin.access') ||
+            req.user.role === 'ADMIN' ||
+            req.user.role === 'SUPER_ADMIN' ||
             req.user.roles?.includes('ADMIN') ||
             req.user.roles?.includes('SUPER_ADMIN');
 

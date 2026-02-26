@@ -288,12 +288,18 @@ exports.getDashboardData = async (req, res) => {
 exports.desktopCheckIn = async (req, res) => {
     try {
         const { employee_id } = req.body;
+        const empId = employee_id || (req.employee ? req.employee.id : null);
+
+        if (!empId) {
+            return res.status(400).json({ error: 'Employee ID is required. Please ensure your profile is linked.' });
+        }
+
         const today = new Date().toISOString().split('T')[0];
 
         // Check if already checked in
         const existing = await AttendanceEntry.findOne({
             where: {
-                employee_id: employee_id || req.employee.id,
+                employee_id: empId,
                 date: today,
                 is_active: true
             }
@@ -304,7 +310,7 @@ exports.desktopCheckIn = async (req, res) => {
         }
 
         const entry = await AttendanceEntry.create({
-            employee_id: employee_id || req.employee.id,
+            employee_id: empId,
             date: today,
             clock_in: new Date(),
             status: 'PRESENT',
@@ -321,11 +327,17 @@ exports.desktopCheckIn = async (req, res) => {
 exports.desktopCheckOut = async (req, res) => {
     try {
         const { employee_id } = req.body;
+        const empId = employee_id || (req.employee ? req.employee.id : null);
+
+        if (!empId) {
+            return res.status(400).json({ error: 'Employee ID is required.' });
+        }
+
         const today = new Date().toISOString().split('T')[0];
 
         const entry = await AttendanceEntry.findOne({
             where: {
-                employee_id: employee_id || req.employee.id,
+                employee_id: empId,
                 date: today,
                 is_active: true
             }
@@ -353,9 +365,16 @@ exports.getAttendanceStatus = async (req, res) => {
     try {
         const today = new Date().toISOString().split('T')[0];
 
+        const { employee_id } = req.query; // Desktop status uses GET
+        const empId = employee_id || (req.employee ? req.employee.id : null);
+
+        if (!empId) {
+            return res.status(400).json({ error: 'Employee ID is required.' });
+        }
+
         const entry = await AttendanceEntry.findOne({
             where: {
-                employee_id: req.employee.id,
+                employee_id: empId,
                 date: today,
                 is_active: true
             }
@@ -376,13 +395,18 @@ exports.getAttendanceStatus = async (req, res) => {
 
 exports.desktopHeartbeat = async (req, res) => {
     try {
-        const { device_info } = req.body;
+        const { device_info, employee_id } = req.body;
+        const empId = employee_id || (req.employee ? req.employee.id : null);
+
         const today = new Date().toISOString().split('T')[0];
 
         // Update last seen for employee's device
         if (device_info?.mac_address) {
             await Device.update(
-                { last_seen_at: new Date() },
+                {
+                    last_seen_at: new Date(),
+                    employee_id: empId // Refresh mapping if needed
+                },
                 { where: { mac_address: device_info.mac_address } }
             );
         }
@@ -390,7 +414,7 @@ exports.desktopHeartbeat = async (req, res) => {
         // Get current attendance status
         const entry = await AttendanceEntry.findOne({
             where: {
-                employee_id: req.employee.id,
+                employee_id: empId,
                 date: today,
                 is_active: true
             }
@@ -406,4 +430,6 @@ exports.desktopHeartbeat = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
+
+exports.getHistory = exports.getEntries;
 

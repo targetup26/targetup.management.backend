@@ -59,6 +59,15 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING,
             allowNull: true,
             comment: 'Secure token used for unauthenticated submission'
+        },
+        submitted_by: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            references: {
+                model: 'users',
+                key: 'id'
+            },
+            comment: 'User who submitted the form'
         }
     }, {
         tableName: 'form_submissions',
@@ -83,6 +92,11 @@ module.exports = (sequelize, DataTypes) => {
         FormSubmission.belongsTo(models.Employee, {
             foreignKey: 'employee_id',
             as: 'Employee'
+        });
+
+        FormSubmission.belongsTo(models.User, {
+            foreignKey: 'submitted_by',
+            as: 'Submitter'
         });
 
         FormSubmission.belongsTo(models.User, {

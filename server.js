@@ -43,19 +43,24 @@ app.get('/', (req, res) => {
 // Import Routes
 app.use('/api', require('./src/routes/api'));
 
-/*
 // Serve Frontend Static Files (Vite Production Build)
-const frontendPath = path.join(__dirname, '../frontend/dist');
+const frontendPath = path.resolve(__dirname, '../frontend/dist');
+
 if (require('fs').existsSync(frontendPath)) {
+    console.log(`[Server] Serving frontend from: ${frontendPath}`);
     app.use(express.static(frontendPath));
 
-    // SPA Fallback: Serve index.html for all non-API routes
-    app.get('*', (req, res, next) => {
-        if (req.path.startsWith('/api')) return next();
+    // SPA Fallback: Serve index.html for all non-API routes (Robust catch-all)
+    app.use((req, res, next) => {
+        // Skip for API routes
+        if (req.path.startsWith('/api')) {
+            return next();
+        }
         res.sendFile(path.join(frontendPath, 'index.html'));
     });
+} else {
+    console.warn(`[Server] Frontend build not found at: ${frontendPath}`);
 }
-*/
 
 // Error Handling
 app.use((err, req, res, next) => {

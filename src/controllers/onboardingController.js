@@ -1,4 +1,4 @@
-const { OnboardingToken, FormTemplate, FormSubmission, FileMetadata, Department } = require('../models');
+const { OnboardingToken, FormTemplate, FormSubmission, FileMetadata, Department, FormAttachment } = require('../models');
 const crypto = require('crypto');
 const { Op } = require('sequelize');
 const path = require('path');
@@ -115,6 +115,20 @@ exports.submitOnboarding = async (req, res) => {
         token.is_used = true;
         token.used_at = new Date();
         await token.save();
+
+        // [NEW] Link all uploaded files to this submission
+        const files = await FileMetadata.findAll({
+            where: { onboarding_token: onboarding_token }
+        });
+
+        for (const file of files) {
+            await FormAttachment.create({
+                submission_id: submission.id,
+                file_metadata_id: file.id,
+                field_name: file.original_name, // fallback or map if field info exists
+                uploaded_at: file.created_at
+            });
+        }
 
         res.json({ success: true, submission_id: submission.id });
 

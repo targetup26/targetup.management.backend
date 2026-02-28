@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { Role, Permission, User, sequelize } = require('./src/models');
+const { Role, Permission, User, sequelize } = require('../src/models');
 
 const permissions = [
     // System & Admin
@@ -24,8 +24,13 @@ const permissions = [
     // Chat
     { key: 'chat.view', category: 'CHAT', description: 'Access Chat' },
     { key: 'chat.write', category: 'CHAT', description: 'Send Messages' },
+    { key: 'chat.department.write', category: 'CHAT', description: 'Send Messages in Department Channels' },
+    { key: 'chat.announcement.write', category: 'CHAT', description: 'Post Announcements' },
     { key: 'chat.group.create', category: 'CHAT', description: 'Create Group Rooms' },
+    { key: 'chat.file.upload', category: 'CHAT', description: 'Upload Files in Chat' },
     { key: 'chat.admin.policy', category: 'CHAT', description: 'Manage Chat Policies & Rooms', is_sensitive: true },
+    { key: 'chat.admin.override', category: 'CHAT', description: 'Bypass Chat Restrictions', is_sensitive: true },
+    { key: 'chat.admin.moderate', category: 'CHAT', description: 'Moderate Messages (Edit/Delete)', is_sensitive: true },
 
     // Forms
     { key: 'forms.view.all', category: 'FORMS', description: 'View All Submissions' },
@@ -51,14 +56,17 @@ const roles = [
         description: 'Departmental management and operational oversight.',
         permissionKeys: [
             'admin.access', 'users.view', 'storage.view.self', 'storage.upload.self',
-            'chat.view', 'chat.write', 'forms.view.all', 'forms.approve', 'sales.access', 'sales.view_all'
+            'chat.view', 'chat.write', 'chat.department.write', 'chat.announcement.write', 'chat.file.upload',
+            'forms.view.all', 'forms.approve', 'sales.access', 'sales.view_all'
         ]
     },
     {
         name: 'EMPLOYEE',
         description: 'Standard staff access for attendance and communication.',
         permissionKeys: [
-            'users.view', 'storage.view.self', 'storage.upload.self', 'chat.view', 'chat.write', 'sales.access'
+            'users.view', 'storage.view.self', 'storage.upload.self',
+            'chat.view', 'chat.write', 'chat.department.write', 'chat.file.upload',
+            'sales.access'
         ]
     }
 ];

@@ -13,8 +13,8 @@ const formSubmissionController = {
             const submissions = await FormSubmission.findAll({
                 where: { submitted_by: req.user.id },
                 include: [
-                    { model: FormTemplate, as: 'Template', attributes: ['title', 'category'] },
-                    { model: User, as: 'Approver', attributes: ['full_name'] }
+                    { model: FormTemplate, as: 'Template', attributes: ['name', 'type'] },
+                    { model: User, as: 'Reviewer', attributes: ['full_name'] }
                 ],
                 order: [['created_at', 'DESC']]
             });
@@ -78,6 +78,19 @@ const formSubmissionController = {
 
             // Connect submission to new employee
             await submission.update({ employee_id: employee.id });
+
+            // [NEW] Link all files in this submission directly to the employee record
+            const attachments = await FormAttachment.findAll({
+                where: { submission_id: submission.id }
+            });
+
+            if (attachments.length > 0) {
+                const fileIds = attachments.map(a => a.file_metadata_id);
+                await FileMetadata.update(
+                    { employee_id: employee.id },
+                    { where: { id: fileIds } }
+                );
+            }
 
             return employee;
         } catch (error) {

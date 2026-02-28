@@ -15,7 +15,7 @@ module.exports = (sequelize, DataTypes) => {
         clock_in: DataTypes.DATE,
         clock_out: DataTypes.DATE,
         status: {
-            type: DataTypes.ENUM('PRESENT', 'ABSENT', 'LATE', 'HALF_DAY', 'LEAVE'),
+            type: DataTypes.ENUM('PRESENT', 'ABSENT', 'LATE', 'HALF_DAY', 'LEAVE', 'ON_BREAK'),
             defaultValue: 'ABSENT'
         },
         source: {

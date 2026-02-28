@@ -1,4 +1,4 @@
-const { AttendanceEntry, Employee, JobRole, Department, Shift, User, AuditLog, Device } = require('../models');
+const { AttendanceEntry, Employee, JobRole, Department, Shift, User, AuditLog, Device, BreakLog } = require('../models');
 const { Op } = require('sequelize');
 
 exports.getEntries = async (req, res) => {
@@ -8,6 +8,10 @@ exports.getEntries = async (req, res) => {
 
         if (from && to) {
             where.date = { [Op.between]: [from, to] };
+        }
+
+        if (employee_id && employee_id !== 'all') {
+            where.employee_id = employee_id;
         }
 
         if (status) where.status = status;
@@ -288,7 +292,7 @@ exports.getDashboardData = async (req, res) => {
 exports.desktopCheckIn = async (req, res) => {
     try {
         const { employee_id } = req.body;
-        const empId = employee_id || (req.employee ? req.employee.id : null);
+        const empId = employee_id || req.employee?.id || req.user?.employee_id;
 
         if (!empId) {
             return res.status(400).json({ error: 'Employee ID is required. Please ensure your profile is linked.' });
@@ -327,7 +331,7 @@ exports.desktopCheckIn = async (req, res) => {
 exports.desktopCheckOut = async (req, res) => {
     try {
         const { employee_id } = req.body;
-        const empId = employee_id || (req.employee ? req.employee.id : null);
+        const empId = employee_id || req.employee?.id || req.user?.employee_id;
 
         if (!empId) {
             return res.status(400).json({ error: 'Employee ID is required.' });
@@ -366,7 +370,7 @@ exports.getAttendanceStatus = async (req, res) => {
         const today = new Date().toISOString().split('T')[0];
 
         const { employee_id } = req.query; // Desktop status uses GET
-        const empId = employee_id || (req.employee ? req.employee.id : null);
+        const empId = employee_id || req.employee?.id || req.user?.employee_id;
 
         if (!empId) {
             return res.status(400).json({ error: 'Employee ID is required.' });
@@ -380,12 +384,22 @@ exports.getAttendanceStatus = async (req, res) => {
             }
         });
 
+        // Check for active break
+        const activeBreak = await BreakLog.findOne({
+            where: {
+                employee_id: empId,
+                date: today,
+                end_time: null
+            }
+        });
+
         res.json({
             is_checked_in: !!entry?.clock_in,
             is_checked_out: !!entry?.clock_out,
             clock_in: entry?.clock_in,
             clock_out: entry?.clock_out,
-            status: entry?.status || 'ABSENT'
+            status: activeBreak ? 'ON_BREAK' : (entry?.status || 'ABSENT'),
+            active_break: activeBreak
         });
     } catch (error) {
         console.error('getAttendanceStatus error:', error);
@@ -396,7 +410,7 @@ exports.getAttendanceStatus = async (req, res) => {
 exports.desktopHeartbeat = async (req, res) => {
     try {
         const { device_info, employee_id } = req.body;
-        const empId = employee_id || (req.employee ? req.employee.id : null);
+        const empId = employee_id || req.employee?.id || req.user?.employee_id;
 
         const today = new Date().toISOString().split('T')[0];
 

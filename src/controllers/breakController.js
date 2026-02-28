@@ -3,7 +3,7 @@ const { Op } = require('sequelize');
 
 exports.startBreak = async (req, res) => {
     try {
-        const employee_id = req.user?.employee_id; // Use employee_id from JWT
+        const employee_id = req.employee?.id || req.user?.employee_id;
 
         if (!employee_id) {
             return res.status(403).json({ error: 'Your user account is not linked to an employee record.' });
@@ -40,6 +40,9 @@ exports.startBreak = async (req, res) => {
             start_time: new Date()
         });
 
+        // Update attendance status
+        await attendance.update({ status: 'ON_BREAK' });
+
         res.status(201).json({
             message: 'Break started',
             break: newBreak
@@ -51,7 +54,7 @@ exports.startBreak = async (req, res) => {
 
 exports.endBreak = async (req, res) => {
     try {
-        const employee_id = req.user?.employee_id; // Use employee_id from JWT
+        const employee_id = req.employee?.id || req.user?.employee_id;
 
         if (!employee_id) {
             return res.status(403).json({ error: 'Your user account is not linked to an employee record.' });
@@ -81,6 +84,12 @@ exports.endBreak = async (req, res) => {
             end_time: endTime,
             duration: durationMinutes
         });
+
+        // 3. Update attendance status back to PRESENT
+        await AttendanceEntry.update(
+            { status: 'PRESENT' },
+            { where: { employee_id, date: today, is_active: true } }
+        );
 
         res.json({
             message: 'Break ended',

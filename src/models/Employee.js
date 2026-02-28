@@ -12,6 +12,7 @@ module.exports = (sequelize, DataTypes) => {
             Employee.hasOne(models.User, { foreignKey: 'employee_id' });
             // Missing associations for dossier display
             Employee.hasMany(models.FormSubmission, { foreignKey: 'employee_id', as: 'Submissions' });
+            Employee.hasMany(models.FileMetadata, { foreignKey: 'employee_id', as: 'VaultFiles' });
             Employee.hasMany(models.AuditLog, {
                 foreignKey: 'entity_id',
                 sourceKey: 'id',

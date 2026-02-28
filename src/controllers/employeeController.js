@@ -113,6 +113,10 @@ exports.getOne = async (req, res) => {
                     model: AuditLog,
                     as: 'ActionHistory',
                     include: [{ model: User }]
+                },
+                {
+                    model: FileMetadata,
+                    as: 'VaultFiles'
                 }
             ]
         });

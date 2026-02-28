@@ -313,7 +313,7 @@ router.get('/forms/templates', auth, formTemplateController.getAllTemplates);
 router.get('/forms/templates/:id', auth, formTemplateController.getTemplate);
 router.get('/forms/my-submissions', auth, formSubmissionController.getMySubmissions);
 router.post('/forms/submit', auth, formSubmissionController.submitForm);
-router.get('/forms/submissions/:id', auth, formSubmissionController.getMySubmissions); // Re-use for specific if needed, or add specific detail route
+router.get('/forms/submissions/:id', auth, formSubmissionController.getSubmissionDetail);
 
 // Print Settings Routes
 router.get('/settings/print', auth, printSettingsController.getPrintSettings);

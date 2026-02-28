@@ -19,7 +19,7 @@ const formSubmissionController = {
                 order: [['created_at', 'DESC']]
             });
 
-            res.json({ success: true, data: submissions });
+            res.json({ success: true, submissions });
         } catch (error) {
             console.error('[FormSubmissionController] getMySubmissions error:', error);
             res.status(500).json({ success: false, error: 'Internal server error' });
@@ -40,10 +40,48 @@ const formSubmissionController = {
                 status: 'pending'
             });
 
-            res.json({ success: true, data: submission });
+            res.json({ success: true, submission });
         } catch (error) {
             console.error('[FormSubmissionController] submitForm error:', error);
             res.status(500).json({ success: false, error: 'Failed to submit form' });
+        }
+    },
+
+    /**
+     * Get single submission detail for current user
+     */
+    getSubmissionDetail: async (req, res) => {
+        try {
+            const { id } = req.params;
+            const submission = await FormSubmission.findOne({
+                where: {
+                    id,
+                    submitted_by: req.user.id
+                },
+                include: [
+                    { model: FormTemplate, as: 'Template', attributes: ['name', 'type'] },
+                    { model: User, as: 'Reviewer', attributes: ['full_name'] },
+                    {
+                        model: FormSignature,
+                        as: 'Signatures',
+                        include: [{ model: User, as: 'Signer', attributes: ['full_name'] }]
+                    },
+                    {
+                        model: FormAttachment,
+                        as: 'Attachments',
+                        include: [{ model: FileMetadata, as: 'FileMetadata' }]
+                    }
+                ]
+            });
+
+            if (!submission) {
+                return res.status(404).json({ success: false, error: 'Submission not found' });
+            }
+
+            res.json({ success: true, submission });
+        } catch (error) {
+            console.error('[FormSubmissionController] getSubmissionDetail error:', error);
+            res.status(500).json({ success: false, error: 'Internal server error' });
         }
     },
 

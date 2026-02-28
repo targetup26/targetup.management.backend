@@ -36,6 +36,10 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Routes
+app.get('/health', (req, res) => {
+    res.json({ status: 'UP', timestamp: new Date(), version: '1.0.0' });
+});
+
 app.get('/', (req, res) => {
     res.json({ message: 'Targetup Attendance API is running', ip: process.env.SERVER_IP });
 });

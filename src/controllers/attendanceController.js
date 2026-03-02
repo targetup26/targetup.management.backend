@@ -445,5 +445,22 @@ exports.desktopHeartbeat = async (req, res) => {
     }
 };
 
+exports.getLeaveBalance = async (req, res) => {
+    try {
+        // Mockup balance as it's not currently in the schema
+        // In a real scenario, this would fetch from a Leaves table or Employee field
+        res.json({
+            success: true,
+            total_days: 21,
+            used_days: 0,
+            remaining_days: 21,
+            pending_requests: 0
+        });
+    } catch (error) {
+        console.error('getLeaveBalance error:', error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
 exports.getHistory = exports.getEntries;
 

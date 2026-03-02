@@ -28,8 +28,10 @@ app.use((req, res, next) => {
 // Middleware
 app.use(cors());
 app.use(helmet({
+    contentSecurityPolicy: false,
     crossOriginEmbedderPolicy: false,
-    crossOriginResourcePolicy: { policy: "cross-origin" }
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    hsts: false
 }));
 app.use(morgan('dev'));
 app.use(express.json());
@@ -40,15 +42,18 @@ app.get('/health', (req, res) => {
     res.json({ status: 'UP', timestamp: new Date(), version: '1.0.0' });
 });
 
-app.get('/', (req, res) => {
-    res.json({ message: 'Targetup Attendance API is running', ip: process.env.SERVER_IP });
-});
-
 // Import Routes
 app.use('/api', require('./src/routes/api'));
 
+// Optional: API Root Check (Moved below to not block frontend)
+app.get('/api-status', (req, res) => {
+    res.json({ message: 'Targetup Attendance API is running', ip: process.env.SERVER_IP });
+});
+
 // Serve Frontend Static Files (Vite Production Build)
-const frontendPath = path.resolve(__dirname, '../frontend/dist');
+const frontendPath = process.env.FRONTEND_PATH
+    ? path.resolve(process.env.FRONTEND_PATH)
+    : path.resolve(__dirname, '../frontend/dist');
 
 if (require('fs').existsSync(frontendPath)) {
     console.log(`[Server] Serving frontend from: ${frontendPath}`);
@@ -82,9 +87,9 @@ io.on('connection', (socket) => {
 
 // Start Server
 const PORT = process.env.PORT || 3001;
-const HOST = process.env.SERVER_IP || '0.0.0.0';
+const HOST = process.env.HOST || '0.0.0.0';
 
-db.sequelize.sync({ alter: false })
+db.sequelize.sync({ alter: true })
     .then(() => {
         console.log('Database synced');
         server.listen(PORT, HOST, () => {

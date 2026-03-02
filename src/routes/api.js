@@ -75,6 +75,7 @@ router.get('/attendance/status', auth, attendanceController.getAttendanceStatus)
 router.get('/attendance/dashboard', auth, requirePermission('attendance.view.self'), attendanceController.getDashboardData);
 router.get('/attendance/history', auth, requirePermission('attendance.view.self'), attendanceController.getEntries);
 router.get('/attendance/stats/today', auth, requirePermission('attendance.view.self'), attendanceController.getDashboardData);
+router.get('/attendance/balance', auth, attendanceController.getLeaveBalance);
 router.get('/attendance', auth, requirePermission('attendance.view.self'), attendanceController.getEntries);
 
 // Desktop App Routes
@@ -308,9 +309,10 @@ router.post('/admin/forms/templates', auth, requirePermission('forms.template.ma
 router.put('/admin/forms/templates/:id', auth, requirePermission('forms.template.manage'), formTemplateController.updateTemplate);
 router.get('/admin/forms/templates/:id/options/:field', auth, requirePermission('forms.template.manage'), formTemplateController.getFieldOptions);
 
-// ========== EMPLOYEE FORM ROUTES ==========
-router.get('/forms/templates', auth, formTemplateController.getAllTemplates);
+// Form Templates (Employee)
+router.get('/forms/templates', auth, formTemplateController.getTemplates);
 router.get('/forms/templates/:id', auth, formTemplateController.getTemplate);
+router.get('/forms/templates/:id/options/:field', auth, formTemplateController.getFieldOptions);
 router.get('/forms/my-submissions', auth, formSubmissionController.getMySubmissions);
 router.post('/forms/submit', auth, formSubmissionController.submitForm);
 router.get('/forms/submissions/:id', auth, formSubmissionController.getSubmissionDetail);

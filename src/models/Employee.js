@@ -46,12 +46,18 @@ module.exports = (sequelize, DataTypes) => {
             defaultValue: 'COMPLETED',
             field: 'onboarding_status'
         }
-        // No Salary Fields as per requirement
     }, {
         sequelize,
         modelName: 'Employee',
         paranoid: true,
-        underscored: false
+        underscored: false,
+        hooks: {
+            beforeValidate: (employee) => {
+                if (!employee.code) {
+                    employee.code = `EMP-${Date.now().toString().slice(-4)}${Math.floor(1000 + Math.random() * 9000)}`;
+                }
+            }
+        }
     });
     return Employee;
 };

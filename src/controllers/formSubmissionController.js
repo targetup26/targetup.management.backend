@@ -98,8 +98,18 @@ const formSubmissionController = {
             const email = formData.email_address || formData.email || null;
             const phone = formData.mobile || formData.phone || null;
 
-            // Generate a unique code if none provided in form
-            const code = `EMP-${Date.now().toString().slice(-6)}`;
+            // [FIX] Generate a unique code if none provided in form, prioritize form data
+            const code = formData.employee_code ||
+                formData.staff_id ||
+                formData.code ||
+                `EMP-${Date.now().toString().slice(-4)}${Math.floor(1000 + Math.random() * 9000)}`;
+
+            const sanitizeId = (id) => {
+                if (!id) return null;
+                const parsed = parseInt(id);
+                if (isNaN(parsed) || (typeof id === 'string' && id.includes('opt_'))) return null;
+                return parsed;
+            };
 
             const employeeData = {
                 code,
@@ -107,9 +117,9 @@ const formSubmissionController = {
                 email,
                 phone,
                 is_active: true,
-                department_id: formData.department_id || null,
-                job_role_id: formData.job_role_id || null,
-                shift_id: formData.shift_id || null
+                department_id: sanitizeId(formData.department_id),
+                job_role_id: sanitizeId(formData.job_role_id),
+                shift_id: sanitizeId(formData.shift_id)
             };
 
             const employee = await Employee.create(employeeData);

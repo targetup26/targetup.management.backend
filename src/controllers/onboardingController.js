@@ -107,7 +107,7 @@ exports.submitOnboarding = async (req, res) => {
             template_id,
             form_data,
             onboarding_token,
-            status: 'submitted',
+            status: 'pending',
             submitted_at: new Date()
         });
 

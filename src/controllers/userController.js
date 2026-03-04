@@ -35,7 +35,7 @@ exports.createFromEmployee = async (req, res) => {
         }
 
         // 4. Secure Credential Generation
-        const tempPassword = password || `SRO@${Math.random().toString(36).slice(-8).toUpperCase()}!`;
+        const tempPassword = password || 'Target@2026';
         const hashedPassword = await bcrypt.hash(tempPassword, 10);
 
         // 5. Atomic Account Creation
@@ -187,39 +187,60 @@ exports.getAllUsers = async (req, res) => {
     }
 };
 
-// Create new user (for admin panel)
+// Create new user (for admin panel) — auto-creates an Employee record
 exports.createUser = async (req, res) => {
     try {
         const { username, password, full_name, email, role } = req.body;
 
         // Validate required fields
-        if (!username || !password || !full_name) {
-            return res.status(400).json({ error: 'Username, password, and full name are required' });
+        if (!full_name) {
+            return res.status(400).json({ error: 'Full name is required' });
         }
 
-        // Check if username already exists
-        const existingUser = await User.findOne({ where: { username } });
+        // Step 1: Auto-create an Employee record (code will be TUP-YYYY-XXXX via hook)
+        const employee = await Employee.create({
+            full_name,
+            email: email || null,
+            is_active: true
+        });
+
+        // Step 2: Use employee code as username (unless one is explicitly provided)
+        const finalUsername = username || employee.code;
+
+        // Step 3: Check if username already exists
+        const existingUser = await User.findOne({ where: { username: finalUsername } });
         if (existingUser) {
-            return res.status(400).json({ error: 'Username already exists' });
+            await employee.destroy(); // rollback orphan employee
+            return res.status(400).json({ error: `Username '${finalUsername}' already exists` });
         }
 
-        // Hash password
-        const hashedPassword = await bcrypt.hash(password, 10);
+        // Step 4: Hash password
+        const finalPassword = password || 'Target@2026';
+        const hashedPassword = await bcrypt.hash(finalPassword, 10);
 
-        // Create user
+        // Step 5: Create user linked to new employee
         const user = await User.create({
-            username,
+            username: finalUsername,
             password: hashedPassword,
             full_name,
             email,
-            role: role || 'HR'
+            role: role || 'EMPLOYEE',
+            employee_id: employee.id
         });
 
-        // Return user without password
+        // Step 6: Assign Role
+        const RoleModel = require('../models').Role;
+        const roleInstance = await RoleModel.findOne({ where: { name: role || 'EMPLOYEE' } });
+        if (roleInstance) await user.setRoles([roleInstance]);
+
         const userResponse = user.toJSON();
         delete userResponse.password;
 
-        res.status(201).json(userResponse);
+        res.status(201).json({
+            ...userResponse,
+            employee_code: employee.code,
+            default_password: password ? undefined : 'Target@2026'
+        });
     } catch (error) {
         console.error('Error creating user:', error);
         res.status(500).json({ error: 'Failed to create user' });

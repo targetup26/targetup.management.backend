@@ -52,9 +52,30 @@ module.exports = (sequelize, DataTypes) => {
         paranoid: true,
         underscored: false,
         hooks: {
-            beforeValidate: (employee) => {
+            beforeValidate: async (employee) => {
                 if (!employee.code) {
-                    employee.code = `EMP-${Date.now().toString().slice(-4)}${Math.floor(1000 + Math.random() * 9000)}`;
+                    const year = new Date().getFullYear();
+                    const prefix = `TUP-${year}-`;
+
+                    // Find the highest existing sequential code for this year
+                    const { Op } = require('sequelize');
+                    const lastEmployee = await employee.constructor.findOne({
+                        where: {
+                            code: { [Op.like]: `${prefix}%` }
+                        },
+                        order: [['code', 'DESC']],
+                        paranoid: false // include soft-deleted to avoid reusing numbers
+                    });
+
+                    let nextNumber = 1;
+                    if (lastEmployee && lastEmployee.code) {
+                        const parts = lastEmployee.code.split('-');
+                        const lastNum = parseInt(parts[parts.length - 1], 10);
+                        if (!isNaN(lastNum)) nextNumber = lastNum + 1;
+                    }
+
+                    // Zero-pad to 4 digits: TUP-2026-0001
+                    employee.code = `${prefix}${String(nextNumber).padStart(4, '0')}`;
                 }
             }
         }

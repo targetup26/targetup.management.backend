@@ -43,6 +43,13 @@ exports.startBreak = async (req, res) => {
         // Update attendance status
         await attendance.update({ status: 'ON_BREAK' });
 
+        if (req.io) {
+            req.io.emit('attendance_update', {
+                type: 'UPDATE',
+                data: attendance
+            });
+        }
+
         res.status(201).json({
             message: 'Break started',
             break: newBreak
@@ -86,10 +93,17 @@ exports.endBreak = async (req, res) => {
         });
 
         // 3. Update attendance status back to PRESENT
-        await AttendanceEntry.update(
-            { status: 'PRESENT' },
-            { where: { employee_id, date: today, is_active: true } }
-        );
+        const attendance = await AttendanceEntry.findOne({ where: { employee_id, date: today, is_active: true } });
+        if (attendance) {
+            await attendance.update({ status: 'PRESENT' });
+
+            if (req.io) {
+                req.io.emit('attendance_update', {
+                    type: 'UPDATE',
+                    data: attendance
+                });
+            }
+        }
 
         res.json({
             message: 'Break ended',

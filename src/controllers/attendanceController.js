@@ -321,6 +321,13 @@ exports.desktopCheckIn = async (req, res) => {
             source: 'DESKTOP'
         });
 
+        if (req.io) {
+            req.io.emit('attendance_update', {
+                type: 'CREATE',
+                data: entry
+            });
+        }
+
         res.json({ success: true, entry });
     } catch (error) {
         console.error('desktopCheckIn error:', error);
@@ -351,12 +358,35 @@ exports.desktopCheckOut = async (req, res) => {
             return res.status(404).json({ error: 'No active attendance entry found' });
         }
 
-        if (entry.clock_out) {
-            return res.status(400).json({ error: 'Already checked out' });
+        // Auto-close any active break
+        const BreakLog = require('../models').BreakLog;
+        const activeBreak = await BreakLog.findOne({
+            where: {
+                employee_id: empId,
+                date: today,
+                end_time: null
+            }
+        });
+
+        if (activeBreak) {
+            const endTime = new Date();
+            const startTime = new Date(activeBreak.start_time);
+            const durationMinutes = Math.round((endTime - startTime) / (1000 * 60));
+            await activeBreak.update({
+                end_time: endTime,
+                duration: durationMinutes
+            });
         }
 
         entry.clock_out = new Date();
         await entry.save();
+
+        if (req.io) {
+            req.io.emit('attendance_update', {
+                type: 'UPDATE',
+                data: entry
+            });
+        }
 
         res.json({ success: true, entry });
     } catch (error) {

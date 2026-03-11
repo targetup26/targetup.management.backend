@@ -53,8 +53,8 @@ app.use(helmet({
     hsts: false
 }));
 app.use(morgan('dev'));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '50gb' }));
+app.use(express.urlencoded({ extended: true, limit: '50gb' }));
 
 // Routes
 app.get('/health', (req, res) => {

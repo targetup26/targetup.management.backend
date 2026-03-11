@@ -160,6 +160,18 @@ router.delete('/storage/:id',
     storageController.deleteFile
 );
 
+router.post('/storage/folders',
+    auth,
+    requirePermission('storage.upload.self'),
+    storageController.createFolder
+);
+
+router.put('/storage/:id/rename',
+    auth,
+    requirePermission('storage.upload.self'),
+    storageController.renameFile
+);
+
 router.get('/storage/:id/versions',
     auth,
     requirePermission('storage.view.self'),

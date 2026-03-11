@@ -58,10 +58,24 @@ function generateUniqueFilename(originalName) {
     return `${basename}_${uuidv4()}${ext}`;
 }
 
+// Build the full hierarchical path for a folder by walking up the tree
+async function getHierarchicalPath(folderId) {
+    if (!folderId) return '';
+    const parts = [];
+    let currentId = folderId;
+    while (currentId) {
+        const folder = await FileMetadata.findByPk(currentId);
+        if (!folder || !folder.is_folder) break;
+        parts.unshift(folder.original_name);
+        currentId = folder.folder_id;
+    }
+    return parts.join('/');
+}
+
 // Upload file
 exports.uploadFile = async (req, res) => {
     try {
-        let { department_id, employee_id } = req.body;
+        let { department_id, employee_id, folder_id } = req.body;
         const file = req.file;
 
         if (!file) {
@@ -130,7 +144,7 @@ exports.uploadFile = async (req, res) => {
         // If employee is a mock (Admin fallback), pass null as employee_id to the database
         const dbEmployeeId = employee.isMock ? null : employee_id;
 
-        return await proceedWithUpload(req, res, file, dbEmployeeId, department_id, employee);
+        return await proceedWithUpload(req, res, file, dbEmployeeId, department_id, employee, folder_id);
     } catch (error) {
         console.error('Upload Process Error:', error);
         res.status(500).json({ error: error.message });
@@ -138,7 +152,7 @@ exports.uploadFile = async (req, res) => {
 };
 
 // Helper to avoid duplication
-async function proceedWithUpload(req, res, file, employee_id, department_id, employee) {
+async function proceedWithUpload(req, res, file, employee_id, department_id, employee, folder_id) {
     try {
         // Check for existing file (versioning)
         const existingFile = await FileMetadata.findOne({
@@ -206,17 +220,25 @@ async function proceedWithUpload(req, res, file, employee_id, department_id, emp
 
             try {
                 const isSensitive = !!(req.headers['x-onboarding-token'] || req.body.onboarding_token || req.body.is_sensitive === 'true' || req.body.is_sensitive === true);
-                const vaultPrefix = isSensitive ? 'DOCS_VAULT\\' : '';
+                const vaultPrefix = isSensitive ? 'DOCS_VAULT/' : '';
+
+                // [UPDATED] Build hierarchical physical path based on folder_id chain
+                const folderHierarchy = await getHierarchicalPath(folder_id);
+                const deptName = employee.Department?.name || 'General';
+                const empName = employee.full_name || 'Shared';
+                const physFolderParts = [`${vaultPrefix}${deptName}`, empName];
+                if (folderHierarchy) physFolderParts.push(folderHierarchy);
+                const physFolder = physFolderParts.join('/');
 
                 await storageAgentClient.uploadFile(
                     server,
-                    vaultPrefix + employee.Department.name,
-                    employee.full_name,
+                    physFolder,
+                    '', // employee subdir already included in physFolder
                     uniqueFilename,
                     fileStream
                 );
 
-                finalFilePath = `${vaultPrefix}${employee.Department.name}\\${employee.full_name}\\${uniqueFilename}`;
+                finalFilePath = `${physFolder}/${uniqueFilename}`;
 
                 // Cleanup temp file
                 fs.unlink(file.path, (err) => {
@@ -245,7 +267,8 @@ async function proceedWithUpload(req, res, file, employee_id, department_id, emp
             onboarding_token: req.headers['x-onboarding-token'] || req.body.onboarding_token || null,
             version,
             parent_file_id,
-            is_sensitive: isSensitive
+            is_sensitive: isSensitive,
+            folder_id: folder_id || null
         });
 
         // Audit log
@@ -319,10 +342,22 @@ exports.downloadFile = async (req, res) => {
             fileStream = fs.createReadStream(fullPath);
         } else {
             // REMOTE AGENT FILE
-            fileStream = await storageAgentClient.downloadFile(
-                file.StorageServer,
-                filepath
-            );
+            try {
+                fileStream = await storageAgentClient.downloadFile(
+                    file.StorageServer,
+                    filepath
+                );
+            } catch (agentErr) {
+                // Agent returned 404 — file missing on server (e.g. uploaded before current agent install)
+                if (agentErr.message && agentErr.message.includes('404')) {
+                    return res.status(404).json({
+                        error: 'File not found on storage server',
+                        detail: 'This file may have been uploaded to a previous server installation.',
+                        filename: file.original_name
+                    });
+                }
+                throw agentErr; // Re-throw other errors
+            }
         }
 
         // Set Headers
@@ -416,7 +451,7 @@ exports.deleteFile = async (req, res) => {
 // List files
 exports.listFiles = async (req, res) => {
     try {
-        const { employee_id, department_id } = req.query;
+        const { employee_id, department_id, folder_id } = req.query;
 
         const where = { is_deleted: false };
 
@@ -428,6 +463,13 @@ exports.listFiles = async (req, res) => {
         // Filter by department if specified
         if (department_id) {
             where.department_id = department_id;
+        }
+
+        // Filter by folder hierarchy
+        if (folder_id) {
+            where.folder_id = folder_id;
+        } else {
+            where.folder_id = null; // Root level by default
         }
 
         // Apply permission-based filtering
@@ -583,6 +625,132 @@ exports.updateSettings = async (req, res) => {
         });
     } catch (error) {
         console.error('Update settings error:', error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+// [NEW] Create Folder
+exports.createFolder = async (req, res) => {
+    try {
+        const { name, department_id, employee_id, folder_id, is_sensitive } = req.body;
+
+        if (!name || !department_id) {
+            return res.status(400).json({ error: 'Folder name and department_id are required' });
+        }
+
+        // Build physical path on disk: Department/Employee/ParentFolderHierarchy/NewFolderName
+        let employee = null;
+        if (employee_id) {
+            employee = await Employee.findByPk(employee_id, {
+                include: [{ model: Department, as: 'Department' }]
+            });
+        }
+
+        let physicalPath = 'virtual_folder'; // fallback
+        let server = null;
+        try {
+            server = await selectServerForDepartment(department_id);
+            const dept = employee?.Department?.name || (await Department.findByPk(department_id))?.name || 'General';
+            const emp = employee?.full_name || 'Shared';
+            const parentHierarchy = await getHierarchicalPath(folder_id);
+            const parts = [dept, emp];
+            if (parentHierarchy) parts.push(parentHierarchy);
+            parts.push(name);
+            const relPath = parts.join('/');
+
+            // Create physical directory on the agent
+            await storageAgentClient.createFolder(server, relPath);
+            physicalPath = relPath;
+        } catch (agentErr) {
+            // Log but don't fail — still save the record so UI works
+            console.warn('[createFolder] Agent physical dir creation failed (will still save record):', agentErr.message);
+        }
+
+        const folder = await FileMetadata.create({
+            filename: `folder_${uuidv4()}`,
+            original_name: name,
+            file_path: physicalPath,
+            file_size: 0,
+            mime_type: 'directory',
+            department_id,
+            employee_id: employee_id || null,
+            server_id: server ? server.id : null,
+            uploaded_by: req.user ? req.user.id : null,
+            is_folder: true,
+            folder_id: folder_id || null,
+            is_sensitive: is_sensitive || false
+        });
+
+        res.status(201).json({ success: true, folder });
+    } catch (error) {
+        console.error('Create folder error:', error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+// [NEW] Rename File or Folder
+exports.renameFile = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { new_name } = req.body;
+
+        if (!new_name) return res.status(400).json({ error: 'New name is required' });
+
+        const file = await FileMetadata.findByPk(id);
+        if (!file || file.is_deleted) {
+            return res.status(404).json({ error: 'File/Folder not found' });
+        }
+
+        // Check Permissions
+        if (!canAccessFile(req.user, file)) {
+            return res.status(403).json({ error: 'Access denied' });
+        }
+
+        const oldName = file.original_name;
+        const oldPhysicalPath = file.file_path;
+
+        // [NEW] Sync rename on the physical storage agent
+        if (file.server_id && oldPhysicalPath && oldPhysicalPath !== 'virtual_folder') {
+            try {
+                const server = await StorageServer.findByPk(file.server_id);
+                if (server) {
+                    let newPhysicalPath;
+                    if (file.is_folder) {
+                        // For folders, replace the last segment (folder name)
+                        const parts = oldPhysicalPath.split('/');
+                        parts[parts.length - 1] = new_name;
+                        newPhysicalPath = parts.join('/');
+                    } else {
+                        // For files, just rename the file component
+                        const dir = oldPhysicalPath.substring(0, oldPhysicalPath.lastIndexOf('/'));
+                        newPhysicalPath = `${dir}/${new_name}`;
+                    }
+                    await storageAgentClient.renameItem(server, oldPhysicalPath, newPhysicalPath);
+                    file.file_path = newPhysicalPath;
+                }
+            } catch (agentErr) {
+                console.warn('[renameFile] Agent rename failed (DB will still update):', agentErr.message);
+            }
+        }
+
+        file.original_name = new_name;
+        await file.save();
+
+        if (req.user) {
+            await AuditLog.create({
+                entity_type: file.is_folder ? 'FOLDER' : 'FILE',
+                entity_id: file.id,
+                action: 'RENAME',
+                old_value: oldName,
+                new_value: new_name,
+                performed_by: req.user.id,
+                ip_address: req.ip
+            });
+        }
+
+        res.json({ success: true, file });
+    } catch (error) {
+        console.error('Rename error:', error);
         res.status(500).json({ error: error.message });
     }
 };

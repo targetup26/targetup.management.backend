@@ -39,9 +39,15 @@ class StorageAgentClient {
             const FormData = require('form-data');
             const formData = new FormData();
             formData.append('file', fileStream, filename);
-            formData.append('department', department);
-            formData.append('employee', employee);
             formData.append('filename', filename);
+
+            if (!employee) {
+                // New hierarchical path mode: department contains the full rel_path
+                formData.append('rel_path', department);
+            } else {
+                formData.append('department', department);
+                formData.append('employee', employee);
+            }
 
             const token = this._generateAgentToken();
             const url = `${this._getBaseUrl(server)}/agent/upload`;
@@ -81,6 +87,45 @@ class StorageAgentClient {
         } catch (error) {
             console.error('[StorageAgentClient] Download error:', error.message);
             throw new Error(`Failed to download file from storage agent: ${error.message}`);
+        }
+    }
+
+    /**
+     * Create a physical directory on the storage agent.
+     * @param {Object} server - StorageServer model instance
+     * @param {string} relPath - Path relative to STORAGE_PATH (e.g. "Engineering/John Doe/Projects")
+     */
+    async createFolder(server, relPath) {
+        try {
+            const token = this._generateAgentToken();
+            const url = `${this._getBaseUrl(server)}/agent/create-folder`;
+            const response = await axios.post(url, { rel_path: relPath }, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            return response.data;
+        } catch (error) {
+            console.error('[StorageAgentClient] Create folder error:', error.message);
+            throw new Error(`Failed to create folder on storage agent: ${error.message}`);
+        }
+    }
+
+    /**
+     * Rename a file or directory on the storage agent.
+     * @param {Object} server - StorageServer model instance
+     * @param {string} oldPath - Old relative path
+     * @param {string} newPath - New relative path
+     */
+    async renameItem(server, oldPath, newPath) {
+        try {
+            const token = this._generateAgentToken();
+            const url = `${this._getBaseUrl(server)}/agent/rename`;
+            const response = await axios.post(url, { old_path: oldPath, new_path: newPath }, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            return response.data;
+        } catch (error) {
+            console.error('[StorageAgentClient] Rename error:', error.message);
+            throw new Error(`Failed to rename on storage agent: ${error.message}`);
         }
     }
 

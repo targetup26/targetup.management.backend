@@ -91,6 +91,25 @@ module.exports = (sequelize, DataTypes) => {
                 key: 'id'
             },
             comment: 'Parent file for versioning'
+        },
+        is_folder: {
+            type: DataTypes.BOOLEAN,
+            defaultValue: false,
+            comment: 'Distinguishes folders from individual files'
+        },
+        folder_id: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            references: {
+                model: 'file_metadata',
+                key: 'id'
+            },
+            comment: 'ID of the parent folder (null if root)'
+        },
+        tags: {
+            type: DataTypes.JSON,
+            allowNull: true,
+            comment: 'Tags for categorization or colors'
         }
     }, {
         tableName: 'file_metadata',
@@ -142,6 +161,17 @@ module.exports = (sequelize, DataTypes) => {
             targetKey: 'token',
             as: 'OnboardingToken',
             constraints: false
+        });
+
+        // Folder hierarchy association
+        FileMetadata.belongsTo(models.FileMetadata, {
+            foreignKey: 'folder_id',
+            as: 'ParentFolder'
+        });
+
+        FileMetadata.hasMany(models.FileMetadata, {
+            foreignKey: 'folder_id',
+            as: 'Children'
         });
     };
 

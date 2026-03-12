@@ -102,11 +102,29 @@ exports.submitOnboarding = async (req, res) => {
             return res.status(403).json({ success: false, error: 'Access Denied: Session token is VOID or EXPIRED.' });
         }
 
-        // Create submission
+        // Try to find matching employee by email or national_id from form_data
+        const { Employee } = require('../models');
+        let employee_id = null;
+        if (form_data) {
+            const parsed = typeof form_data === 'string' ? JSON.parse(form_data) : form_data;
+            const emailVal = parsed.email || parsed.personal_email || parsed.work_email;
+            const nationalId = parsed.national_id || parsed.national_number;
+            if (emailVal || nationalId) {
+                const { Op } = require('sequelize');
+                const whereClause = {};
+                if (emailVal) whereClause.email = emailVal;
+                if (nationalId) whereClause.national_id = nationalId;
+                const foundEmployee = await Employee.findOne({ where: { [Op.or]: Object.entries(whereClause).map(([k, v]) => ({ [k]: v })) } });
+                if (foundEmployee) employee_id = foundEmployee.id;
+            }
+        }
+
+        // Create submission with employee_id if found
         const submission = await FormSubmission.create({
             template_id,
             form_data,
             onboarding_token,
+            employee_id,   // ← links to employee profile
             status: 'pending',
             submitted_at: new Date()
         });
@@ -116,7 +134,7 @@ exports.submitOnboarding = async (req, res) => {
         token.used_at = new Date();
         await token.save();
 
-        // [NEW] Link all uploaded files to this submission
+        // Link all uploaded files to this submission
         const files = await FileMetadata.findAll({
             where: { onboarding_token: onboarding_token }
         });
@@ -125,9 +143,13 @@ exports.submitOnboarding = async (req, res) => {
             await FormAttachment.create({
                 submission_id: submission.id,
                 file_metadata_id: file.id,
-                field_name: file.original_name, // fallback or map if field info exists
+                field_name: file.original_name,
                 uploaded_at: file.created_at
             });
+            // Also link file to employee vault
+            if (employee_id) {
+                await file.update({ employee_id });
+            }
         }
 
         res.json({ success: true, submission_id: submission.id });

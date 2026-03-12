@@ -209,6 +209,14 @@ router.post('/notes', auth, personalNoteController.createNote);
 router.put('/notes/:id', auth, personalNoteController.updateNote);
 router.delete('/notes/:id', auth, personalNoteController.deleteNote);
 
+// ========== LEAD ACTIVITY / CRM ROUTES ==========
+const leadActivityController = require('../controllers/leadActivityController');
+router.get('/leads/:leadId',                            auth, leadActivityController.getLeadDetail);
+router.get('/leads/:leadId/activities',                 auth, leadActivityController.getActivities);
+router.post('/leads/:leadId/activities',                auth, leadActivityController.addActivity);
+router.delete('/leads/:leadId/activities/:activityId',  auth, leadActivityController.deleteActivity);
+router.patch('/leads/:leadId/status',                   auth, leadActivityController.updateLeadStatus);
+
 
 // ========== CHAT ROUTES (Desktop App Only) ==========
 
@@ -364,6 +372,19 @@ router.delete('/admin/taxonomy/categories/:id', auth, taxonomyController.deleteC
 router.post('/leads/export', auth, exportController.exportLeads);
 router.get('/leads/export/history', auth, exportController.getExportHistory);
 
-// NOTE: /webhooks/n8n-results route removed - Lead Engine handles results directly
+// ========== FILE SHARE LINK ROUTES ==========
+const shareController = require('../controllers/shareController');
+// Public routes (no auth required)
+router.get('/share/:token/info', shareController.getShareInfo);
+router.get('/share/:token/download', shareController.downloadViaShareLink);
+router.get('/share/:token/preview', shareController.previewViaShareLink);
+// Folder share routes (public)
+router.get('/share/:token/folder', shareController.getFolderContents);
+router.get('/share/:token/folder/file/:fileId', shareController.downloadFolderFile);
+router.get('/share/:token/folder/zip', shareController.downloadFolderZip);
+// Authenticated routes
+router.post('/storage/share/:fileId', auth, shareController.generateShareLink);
+router.get('/storage/shares/:fileId', auth, shareController.listFileShares);
+router.delete('/storage/share/:shareId', auth, shareController.revokeShareLink);
 
 module.exports = router;

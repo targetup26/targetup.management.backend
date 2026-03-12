@@ -88,7 +88,8 @@ exports.getAll = async (req, res) => {
 
 exports.getOne = async (req, res) => {
     try {
-        const { Department, JobRole, Shift, FormSubmission, FormTemplate, FormAttachment, FileMetadata, BreakLog, AuditLog, User } = require('../models');
+        const { Department, JobRole, Shift, FormSubmission, FormTemplate, FormAttachment,
+            FileMetadata, BreakLog, AuditLog, User, OnboardingToken } = require('../models');
 
         const data = await Employee.findByPk(req.params.id, {
             include: [
@@ -120,7 +121,58 @@ exports.getOne = async (req, res) => {
                 }
             ]
         });
+
         if (!data) return res.status(404).json({ error: 'Employee not found' });
+
+        // Find orphaned join form submissions (no employee_id) by in-memory matching
+        try {
+            const { Op } = require('sequelize');
+
+            // Get all unlinked onboarding submissions
+            const allOrphanSubs = await FormSubmission.findAll({
+                where: {
+                    employee_id: null,
+                    onboarding_token: { [Op.ne]: null }
+                },
+                include: [
+                    { model: FormTemplate, as: 'Template' },
+                    { model: FormAttachment, as: 'Attachments', include: [{ model: FileMetadata, as: 'FileMetadata' }] }
+                ]
+            });
+
+            if (allOrphanSubs.length > 0) {
+                // Build search values from the employee record (lowercase for case-insensitive matching)
+                const empName = (data.full_name || '').toLowerCase().trim();
+                const empEmail = (data.email || '').toLowerCase().trim();
+                const empNationalId = (data.national_id || '').trim();
+                const empPhone = (data.phone || '').trim();
+
+                const matched = allOrphanSubs.filter(sub => {
+                    try {
+                        const fd = typeof sub.form_data === 'string' ? JSON.parse(sub.form_data) : (sub.form_data || {});
+                        const fdStr = JSON.stringify(fd).toLowerCase();
+
+                        if (empName && fdStr.includes(empName)) return true;
+                        if (empEmail && fdStr.includes(empEmail)) return true;
+                        if (empNationalId && fdStr.includes(empNationalId)) return true;
+                        if (empPhone && empPhone.length >= 8 && fdStr.includes(empPhone)) return true;
+                    } catch (_) {}
+                    return false;
+                });
+
+                if (matched.length > 0) {
+                    // Silently back-fill employee_id for matched submissions
+                    await FormSubmission.update(
+                        { employee_id: data.id },
+                        { where: { id: matched.map(s => s.id) } }
+                    );
+                    data.Submissions = [...(data.Submissions || []), ...matched];
+                }
+            }
+        } catch (orphanErr) {
+            console.warn('[getOne] Orphan submission lookup failed:', orphanErr.message);
+        }
+
         res.json(data);
     } catch (error) {
         res.status(500).json({ error: error.message });

@@ -86,6 +86,42 @@ const formSubmissionController = {
     },
 
     /**
+     * Get submission data for printing (admin or submitter)
+     */
+    getPrintSubmission: async (req, res) => {
+        try {
+            const { id } = req.params;
+            const submission = await FormSubmission.findOne({
+                where: { id },
+                include: [
+                    { model: FormTemplate, as: 'Template' },
+                    { model: User, as: 'Submitter', attributes: ['full_name', 'username'] },
+                    { model: User, as: 'Reviewer', attributes: ['full_name'] },
+                    {
+                        model: FormSignature,
+                        as: 'Signatures',
+                        include: [{ model: User, as: 'Signer', attributes: ['full_name'] }]
+                    },
+                    {
+                        model: FormAttachment,
+                        as: 'Attachments',
+                        include: [{ model: FileMetadata, as: 'FileMetadata' }]
+                    }
+                ]
+            });
+
+            if (!submission) {
+                return res.status(404).json({ success: false, error: 'Submission not found' });
+            }
+
+            res.json({ success: true, submission });
+        } catch (error) {
+            console.error('[FormSubmissionController] getPrintSubmission error:', error);
+            res.status(500).json({ success: false, error: 'Internal server error' });
+        }
+    },
+
+    /**
      * Create an Employee from an approved Join Form
      * Note: This assumes submission is a FormSubmission instance
      */

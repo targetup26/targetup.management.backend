@@ -336,6 +336,7 @@ router.get('/forms/templates/:id/options/:field', auth, formTemplateController.g
 router.get('/forms/my-submissions', auth, formSubmissionController.getMySubmissions);
 router.post('/forms/submit', auth, formSubmissionController.submitForm);
 router.get('/forms/submissions/:id', auth, formSubmissionController.getSubmissionDetail);
+router.get('/forms/submissions/:id/print', auth, formSubmissionController.getPrintSubmission);
 
 // Print Settings Routes
 router.get('/settings/print', auth, printSettingsController.getPrintSettings);

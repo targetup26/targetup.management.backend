@@ -26,6 +26,7 @@ const exportController = require('../controllers/exportController');
 const taxonomyController = require('../controllers/taxonomyController');
 const formSubmissionController = require('../controllers/formSubmissionController');
 const onboardingController = require('../controllers/onboardingController');
+const shareController = require('../controllers/shareController');
 
 // Middleware
 const auth = require('../middleware/auth');

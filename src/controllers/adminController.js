@@ -38,7 +38,6 @@ exports.getAllSubmissions = async (req, res) => {
                 include: [{
                     model: FileMetadata,
                     as: 'FileMetadata',
-                    where: { is_deleted: false },
                     required: false
                 }]
             }
@@ -90,7 +89,6 @@ exports.getSubmissionDetail = async (req, res) => {
                     include: [{
                         model: FileMetadata,
                         as: 'FileMetadata',
-                        where: { is_deleted: false },
                         required: false // LEFT JOIN so attachments without files still show
                     }]
                 }

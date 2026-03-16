@@ -37,8 +37,58 @@ const formSubmissionController = {
                 template_id,
                 submitted_by: req.user.id,
                 form_data: JSON.stringify(form_data),
-                status: 'pending'
+                status: 'pending',
+                submitted_at: new Date()
             });
+
+            // ── Create FormAttachment records for any file fields ──
+            // File fields store the FileMetadata ID as their value (a number)
+            // We detect them: either by template schema (type === 'file') or
+            // by checking known common file field names as a fallback.
+            try {
+                const template = await FormTemplate.findByPk(template_id, { attributes: ['schema'] });
+                const schema = template?.schema
+                    ? (typeof template.schema === 'string' ? JSON.parse(template.schema) : template.schema)
+                    : null;
+
+                // Collect field names that are of type 'file' from template schema
+                const fileFieldNames = new Set();
+                if (schema?.sections) {
+                    schema.sections.forEach(section => {
+                        (section.fields || []).forEach(field => {
+                            if (field.type === 'file') fileFieldNames.add(field.name);
+                        });
+                    });
+                }
+
+                // Fallback: common known file field names
+                ['personal_photo', 'id_card_scan', 'cv_upload', 'passport_scan',
+                 'medical_certificate', 'signature', 'attachment'].forEach(n => fileFieldNames.add(n));
+
+                // Create FormAttachment for each file field that has a numeric ID
+                const attachmentPromises = [];
+                for (const [fieldName, value] of Object.entries(form_data)) {
+                    if (fileFieldNames.has(fieldName) && value && !isNaN(parseInt(value))) {
+                        attachmentPromises.push(
+                            FormAttachment.create({
+                                submission_id: submission.id,
+                                file_metadata_id: parseInt(value),
+                                field_name: fieldName,
+                                attachment_type: fieldName,
+                                uploaded_by: req.user.id,
+                                uploaded_at: new Date()
+                            })
+                        );
+                    }
+                }
+
+                if (attachmentPromises.length > 0) {
+                    await Promise.all(attachmentPromises);
+                }
+            } catch (attachErr) {
+                // Don't fail the whole submission for attachment linking errors
+                console.warn('[submitForm] FormAttachment linking warning:', attachErr.message);
+            }
 
             res.json({ success: true, submission });
         } catch (error) {

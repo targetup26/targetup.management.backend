@@ -261,9 +261,22 @@ exports.updateUser = async (req, res) => {
         // Update fields
         if (full_name) user.full_name = full_name;
         if (email !== undefined) user.email = email;
-        if (role) user.role = role;
         if (password) {
             user.password = await bcrypt.hash(password, 10);
+        }
+
+        // Update role — both the legacy string AND the UserRole join table
+        if (role && role !== user.role) {
+            user.role = role;
+
+            const RoleModel = require('../models').Role;
+            const roleInstance = await RoleModel.findOne({ where: { name: role } });
+            if (roleInstance) {
+                await user.setRoles([roleInstance]);
+                console.log(`[UserUpdate] Synced role '${role}' in user_roles table for user ${user.id}`);
+            } else {
+                console.warn(`[UserUpdate] WARNING: Role '${role}' not found in roles table`);
+            }
         }
 
         await user.save();

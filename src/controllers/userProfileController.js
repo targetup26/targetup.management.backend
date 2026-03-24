@@ -62,10 +62,12 @@ exports.getMyProfile = async (req, res) => {
                 employee: user.Employee,
                 department: user.Employee?.Department,
                 job_role: user.Employee?.JobRole,
-                identity // Also available inside user if needed
+                identity,
+                roles: req.user.roles || [],
+                permissions: req.user.permissions || []
             },
-            employee: user.Employee, // Compatibility
-            identity // Top-level for easy form auto-fill
+            employee: user.Employee,
+            identity
         });
     } catch (error) {
         console.error('Error fetching profile:', error);

@@ -21,10 +21,35 @@ exports.register = async (req, res) => {
 exports.login = async (req, res) => {
     try {
         const { username, password } = req.body;
-        const user = await User.findOne({ where: { username } });
+        const { Role, Permission } = require('../models');
+
+        const user = await User.findOne({
+            where: { username },
+            include: [{
+                model: Role,
+                as: 'Roles',
+                include: [{
+                    model: Permission,
+                    as: 'Permissions',
+                    through: { attributes: [] }
+                }]
+            }]
+        });
 
         if (!user || !(await bcrypt.compare(password, user.password))) {
             return res.status(401).json({ error: 'Invalid credentials' });
+        }
+
+        // Flatten permissions from roles
+        const roles = [];
+        const permissions = new Set();
+        if (user.Roles) {
+            user.Roles.forEach(role => {
+                roles.push(role.name);
+                if (role.Permissions) {
+                    role.Permissions.forEach(p => permissions.add(p.key));
+                }
+            });
         }
 
         const token = jwt.sign(
@@ -33,7 +58,18 @@ exports.login = async (req, res) => {
             { expiresIn: '7d' }
         );
 
-        res.json({ token, user: { id: user.id, username: user.username, role: user.role, full_name: user.full_name, employee_id: user.employee_id } });
+        res.json({
+            token,
+            user: {
+                id: user.id,
+                username: user.username,
+                role: user.role,
+                full_name: user.full_name,
+                employee_id: user.employee_id,
+                roles,
+                permissions: Array.from(permissions)
+            }
+        });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

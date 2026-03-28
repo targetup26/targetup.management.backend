@@ -5,8 +5,9 @@ services:
     image: mysql:8.0
     container_name: targetup_db
     restart: always
-    env_file:
-      - .env
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASS}
+      MYSQL_DATABASE: ${DB_NAME:-team_attendance}
     ports:
       - "3306:3306"
     volumes:
@@ -16,8 +17,6 @@ services:
     image: redis:alpine
     container_name: targetup_redis
     restart: always
-    env_file:
-      - .env
     ports:
       - "6379:6379"
     volumes:
@@ -28,9 +27,21 @@ services:
     container_name: targetup_backend
     restart: always
     ports:
-      - "5050:5050"
-    env_file:
-      - .env
+      - "${PORT:-5050}:${PORT:-5050}"
+    environment:
+      - PORT=${PORT:-5050}
+      - NODE_ENV=${NODE_ENV:-production}
+      - SERVER_IP=${SERVER_IP:-0.0.0.0}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5173}
+      - DB_HOST=${DB_HOST:-db}
+      - DB_USER=${DB_USER:-root}
+      - DB_PASS=${DB_PASS}
+      - DB_NAME=${DB_NAME:-team_attendance}
+      - REDIS_HOST=${REDIS_HOST:-redis}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - JWT_SECRET=${JWT_SECRET:-super_secret}
+      - STORAGE_AGENT_URL=${STORAGE_AGENT_URL:-http://localhost:3001}
+      - LEAD_ENGINE_URL=${LEAD_ENGINE_URL:-http://localhost:4001}
     depends_on:
       - db
       - redis

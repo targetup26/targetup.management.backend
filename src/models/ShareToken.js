@@ -1,4 +1,4 @@
-const { v4: uuidv4 } = require('uuid');
+const crypto = require('crypto');
 
 module.exports = (sequelize, DataTypes) => {
     const ShareToken = sequelize.define('ShareToken', {
@@ -11,7 +11,7 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING(64),
             allowNull: false,
             unique: true,
-            defaultValue: () => uuidv4().replace(/-/g, '')
+            defaultValue: () => crypto.randomUUID().replace(/-/g, '')
         },
         file_id: {
             type: DataTypes.INTEGER,

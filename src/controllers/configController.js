@@ -38,10 +38,8 @@ exports.getSystemConfig = async (req, res) => {
             presence: {
                 labels: dynamicPresence?.labels || {
                     available: "Online",
-                    busy: "Do Not Disturb",
-                    meeting: "In Meeting",
                     idle: "Idle",
-                    invisible: "Invisible"
+                    busy: "Working"
                 },
                 thresholds: dynamicPresence?.thresholds || {
                     idleMinutes: 5
@@ -61,7 +59,8 @@ exports.getSystemConfig = async (req, res) => {
  */
 exports.updatePresenceConfig = async (req, res) => {
     try {
-        if (req.user.role !== 'ADMIN') {
+        const allowedRoles = ['ADMIN', 'SUPER_ADMIN'];
+        if (!allowedRoles.includes(req.user.role)) {
             return res.status(403).json({ success: false, error: 'Forbidden' });
         }
 

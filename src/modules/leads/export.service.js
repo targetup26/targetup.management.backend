@@ -2,7 +2,7 @@ const { Lead, LeadExport, User, Category, Subcategory } = require('../../models'
 const { Op } = require('sequelize');
 const fs = require('fs');
 const path = require('path');
-const { v4: uuidv4 } = require('uuid');
+const crypto = require('crypto');
 
 const exportService = {
     /**
@@ -51,7 +51,7 @@ const exportService = {
         const csvContent = [headers.join(','), ...csvRows.map(r => r.join(','))].join('\n');
 
         // 4. Save File
-        const filename = `leads_export_${Date.now()}_${uuidv4().substring(0, 8)}.csv`;
+        const filename = `leads_export_${Date.now()}_${crypto.randomUUID().substring(0, 8)}.csv`;
         const exportDir = path.join(process.cwd(), 'public', 'exports');
 
         if (!fs.existsSync(exportDir)) {

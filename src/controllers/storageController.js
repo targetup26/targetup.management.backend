@@ -1,6 +1,6 @@
 const { StorageServer, DepartmentStorage, FileMetadata, Employee, Department, User, AuditLog, OnboardingToken } = require('../models');
 const storageAgentClient = require('../services/storageAgentClient');
-const { v4: uuidv4 } = require('uuid');
+const crypto = require('crypto');
 const path = require('path');
 const { Op } = require('sequelize');
 
@@ -55,7 +55,7 @@ function canAccessFile(user, file) {
 function generateUniqueFilename(originalName) {
     const ext = path.extname(originalName);
     const basename = path.basename(originalName, ext);
-    return `${basename}_${uuidv4()}${ext}`;
+    return `${basename}_${crypto.randomUUID()}${ext}`;
 }
 
 // Build the full hierarchical path for a folder by walking up the tree
@@ -667,7 +667,7 @@ exports.createFolder = async (req, res) => {
         }
 
         const folder = await FileMetadata.create({
-            filename: `folder_${uuidv4()}`,
+            filename: `folder_${crypto.randomUUID()}`,
             original_name: name,
             file_path: physicalPath,
             file_size: 0,

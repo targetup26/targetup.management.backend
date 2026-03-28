@@ -1,6 +1,6 @@
 const { ShareToken, FileMetadata, StorageServer, User } = require('../models');
 const storageAgentClient = require('../services/storageAgentClient');
-const { v4: uuidv4 } = require('uuid');
+const crypto = require('crypto');
 const path = require('path');
 
 // Helper: check if token is still valid
@@ -33,7 +33,7 @@ exports.generateShareLink = async (req, res) => {
         }
 
         const shareToken = await ShareToken.create({
-            token: uuidv4().replace(/-/g, ''),
+            token: crypto.randomUUID().replace(/-/g, ''),
             file_id: fileId,
             created_by: req.user?.id || null,
             expires_at,

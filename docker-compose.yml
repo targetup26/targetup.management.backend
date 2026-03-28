@@ -5,7 +5,9 @@ services:
     image: mysql:8.0
     container_name: targetup_db
     restart: always
-    environment: MYSQL_ROOT_PASSWORD= ${DB_PASS} MYSQL_DATABASE= ${DB_NAME:-team_attendance}
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_PASS}
+      - MYSQL_DATABASE=${DB_NAME:-team_attendance}
     ports:
       - "3306:3306"
     volumes:

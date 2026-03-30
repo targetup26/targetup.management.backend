@@ -134,7 +134,7 @@ const PORT = process.env.PORT || 3001;
 const HOST = process.env.HOST || '0.0.0.0';
 
 db.sequelize.query('SET FOREIGN_KEY_CHECKS = 0')
-    .then(() => db.sequelize.sync({ alter: false }))
+    .then(() => db.sequelize.sync({ alter: true }))
     .then(() => db.sequelize.query('SET FOREIGN_KEY_CHECKS = 1'))
     .then(() => {
         console.log('Database synced');

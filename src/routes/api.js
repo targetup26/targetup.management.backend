@@ -217,7 +217,7 @@ router.delete('/notes/:id', auth, personalNoteController.deleteNote);
 // ========== LEAD ACTIVITY / CRM ROUTES ==========
 const leadActivityController = require('../controllers/leadActivityController');
 // IMPORTANT: Static routes must come BEFORE dynamic :leadId route
-router.get('/leads/history', auth, requireAuth, leadController.getHistory);
+router.get('/leads/history', auth, leadController.getHistory);
 router.get('/leads/job/:id', auth, leadController.getJobStatus);
 router.get('/leads/:leadId',                            auth, leadActivityController.getLeadDetail);
 router.get('/leads/:leadId/activities',                 auth, leadActivityController.getActivities);

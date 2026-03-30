@@ -188,6 +188,11 @@ router.get('/storage/health',
 router.get('/storage/settings', auth, requirePermission('storage.manage'), storageController.getSettings);
 router.post('/storage/settings', auth, requirePermission('storage.manage'), storageController.updateSettings);
 
+// [NEW] Storage Servers CRUD (Admin Only)
+router.post('/storage/servers', auth, requirePermission('storage.manage'), storageController.createServer);
+router.put('/storage/servers/:id', auth, requirePermission('storage.manage'), storageController.updateServer);
+router.delete('/storage/servers/:id', auth, requirePermission('storage.manage'), storageController.deleteServer);
+
 // Dashboard & Activity
 router.get('/admin/dashboard-stats', auth, requirePermission('admin.access'), attendanceController.getDashboardData);
 router.get('/admin/dashboard-tactical', auth, requirePermission('admin.access'), adminController.getDashboardTactical);

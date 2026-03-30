@@ -754,3 +754,56 @@ exports.renameFile = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
+
+// [NEW] Storage Server CRUD
+exports.createServer = async (req, res) => {
+    try {
+        const { name, ip_address, port, storage_path, total_capacity_gb, is_active } = req.body;
+        const server = await StorageServer.create({
+            name, ip_address, port, storage_path, total_capacity_gb, is_active
+        });
+        res.status(201).json({ success: true, server });
+    } catch (error) {
+        console.error('Create server error:', error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+exports.updateServer = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const server = await StorageServer.findByPk(id);
+        if (!server) return res.status(404).json({ error: 'Server not found' });
+        
+        await server.update(req.body);
+        res.json({ success: true, server });
+    } catch (error) {
+        console.error('Update server error:', error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+exports.deleteServer = async (req, res) => {
+    try {
+        const { id } = req.params;
+        // Prevent deletion if connected to dependencies
+        const deptLink = await DepartmentStorage.findOne({ where: { server_id: id } });
+        if (deptLink) {
+            return res.status(400).json({ error: 'Cannot delete server. It is actively linked to a department.' });
+        }
+        
+        const fileLink = await FileMetadata.findOne({ where: { server_id: id } });
+        if (fileLink) {
+            return res.status(400).json({ error: 'Cannot delete server. Files exist pointing to this node.' });
+        }
+        
+        const server = await StorageServer.findByPk(id);
+        if (!server) return res.status(404).json({ error: 'Server not found' });
+        
+        await server.destroy();
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Delete server error:', error);
+        res.status(500).json({ error: error.message });
+    }
+};

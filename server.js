@@ -134,10 +134,11 @@ const PORT = process.env.PORT || 3001;
 const HOST = process.env.HOST || '0.0.0.0';
 
 db.sequelize.query('SET FOREIGN_KEY_CHECKS = 0')
-    .then(() => db.sequelize.sync({ alter: true }))
-    .then(() => db.sequelize.query('SET FOREIGN_KEY_CHECKS = 1'))
+    // Run database sync and auto-seed
+    .then(() => db.sequelize.authenticate())
+    .then(() => db.sequelize.sync())
     .then(async () => {
-        console.log('Database synced');
+        console.log('Database synchronized (alter disabled for production stability)');
 
         // Automatically seed default roles, permissions, and admin user
         try {

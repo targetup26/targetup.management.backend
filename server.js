@@ -136,8 +136,17 @@ const HOST = process.env.HOST || '0.0.0.0';
 db.sequelize.query('SET FOREIGN_KEY_CHECKS = 0')
     .then(() => db.sequelize.sync({ alter: true }))
     .then(() => db.sequelize.query('SET FOREIGN_KEY_CHECKS = 1'))
-    .then(() => {
+    .then(async () => {
         console.log('Database synced');
+
+        // Automatically seed default roles, permissions, and admin user
+        try {
+            const runAutoSeed = require('./src/utils/autoSeed');
+            await runAutoSeed();
+        } catch (seedErr) {
+            console.error('Failed to run auto-seeder:', seedErr);
+        }
+
         server.listen(PORT, HOST, () => {
             console.log(`Server running on http://${HOST}:${PORT}`);
 

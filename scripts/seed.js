@@ -1,5 +1,5 @@
 require('dotenv').config();
-const db = require('./src/models');
+const db = require('../src/models');
 const bcrypt = require('bcryptjs');
 
 async function seed() {

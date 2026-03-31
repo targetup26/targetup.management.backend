@@ -35,8 +35,9 @@ io.use(async (socket, next) => {
     }
 });
 
-// Attach io to app so it's accessible via req.app.io in controllers
-app.io = io;
+// Attach io to app so it's accessible via req.app.get('io') in controllers
+app.set('io', io);
+app.io = io; // backward compat
 
 // Middleware to attach io to req (keeping for backward compatibility)
 app.use((req, res, next) => {
@@ -127,6 +128,12 @@ io.on('connection', (socket) => {
         console.log('User disconnected:', socket.id);
         io.emit('user_offline', { user_id: socket.user_id });
     });
+
+    // Admin Activity Monitor room
+    socket.on('join_admin_activity', () => {
+        socket.join('admin-activity');
+        console.log(`[Socket] User ${socket.user_id} joined admin-activity room`);
+    });
 });
 
 // Start Server
@@ -166,6 +173,12 @@ db.sequelize.query('SET FOREIGN_KEY_CHECKS = 0')
                     console.error('Background Scan Error:', err);
                 }
             }, SCAN_INTERVAL);
+
+            // Background Task: Auto-offline detection & crash-safe checkout (every 60s)
+            const activityController = require('./src/controllers/activityController');
+            setInterval(async () => {
+                await activityController.runAutoOfflineCron();
+            }, 60 * 1000);
         });
     }).catch((err) => {
         console.error('Failed to sync database:', err);

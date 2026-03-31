@@ -26,6 +26,7 @@ const exportController = require('../controllers/exportController');
 const taxonomyController = require('../controllers/taxonomyController');
 const formSubmissionController = require('../controllers/formSubmissionController');
 const onboardingController = require('../controllers/onboardingController');
+const activityController = require('../controllers/activityController');
 
 // Middleware
 const auth = require('../middleware/auth');
@@ -395,5 +396,12 @@ router.get('/share/:token/folder/zip', shareController.downloadFolderZip);
 router.post('/storage/share/:fileId', auth, shareController.generateShareLink);
 router.get('/storage/shares/:fileId', auth, shareController.listFileShares);
 router.delete('/storage/share/:shareId', auth, shareController.revokeShareLink);
+
+// ========== ACTIVITY TRACKING ROUTES ==========
+router.post('/activity/snapshot',           auth, activityController.snapshot);
+router.post('/activity/checkout',           auth, activityController.checkout);
+router.post('/activity/flush-queue',        auth, activityController.flushQueue);
+router.get('/activity/live',                auth, activityController.getLive);
+router.get('/activity/session/:employeeId', auth, activityController.getSession);
 
 module.exports = router;

@@ -35,6 +35,41 @@ const requirePermission = require('../middleware/requirePermission');
 const upload = require('../middleware/upload');
 const chatRateLimiter = require('../middleware/rateLimiter');
 
+// ==========================================
+// DB EMERGENCY FIX ENDPOINT
+// Resolves Linux case-sensitivity FK issues
+// ==========================================
+router.get('/admin/fix-db', async (req, res) => {
+    const db = require('../models');
+    try {
+        await db.sequelize.query("SET FOREIGN_KEY_CHECKS = 0;");
+        
+        // Find all broken foreign keys referencing 'Employees' (capital E)
+        const [results] = await db.sequelize.query(`
+            SELECT TABLE_NAME, CONSTRAINT_NAME, COLUMN_NAME
+            FROM information_schema.KEY_COLUMN_USAGE 
+            WHERE REFERENCED_TABLE_NAME = 'Employees' 
+            AND TABLE_SCHEMA = DATABASE();
+        `);
+        
+        const fixed = [];
+        for (const row of results) {
+            try {
+                await db.sequelize.query(`ALTER TABLE \`${row.TABLE_NAME}\` DROP FOREIGN KEY \`${row.CONSTRAINT_NAME}\`;`);
+                await db.sequelize.query(`ALTER TABLE \`${row.TABLE_NAME}\` ADD CONSTRAINT \`${row.CONSTRAINT_NAME}_fx\` FOREIGN KEY (\`${row.COLUMN_NAME}\`) REFERENCES \`employees\`(\`id\`) ON DELETE SET NULL ON UPDATE CASCADE;`);
+                fixed.push(row.TABLE_NAME);
+            } catch (err) {
+                console.error('Failed fixing', row.TABLE_NAME, err.message);
+            }
+        }
+        
+        await db.sequelize.query("SET FOREIGN_KEY_CHECKS = 1;");
+        res.json({ success: true, message: 'DB Constraints Fixed', fixedTables: fixed });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 
 // Device Routes
 router.get('/devices/scan', deviceController.scanNetwork);

@@ -20,6 +20,7 @@ module.exports = (sequelize, DataTypes) => {
                 as: 'ActionHistory',
                 constraints: false
             });
+            Employee.hasMany(models.ActivitySession, { foreignKey: 'employee_id', as: 'ActivitySessions' });
         }
     }
 

@@ -180,7 +180,7 @@ exports.getLive = async (req, res) => {
             include: [{
                 model: Employee,
                 as: 'Employee',
-                attributes: ['id', 'full_name', 'code', 'job_title'],
+                attributes: ['id', 'full_name', 'code', 'email'],
                 required: false  // LEFT JOIN — don't fail if no Employee
             }],
             order: [['last_seen_at', 'DESC']]

@@ -70,6 +70,22 @@ router.get('/admin/fix-db', async (req, res) => {
     }
 });
 
+// Reset corrupted activity sessions (one-time cleanup)
+router.get('/admin/reset-sessions', async (req, res) => {
+    const db = require('../models');
+    try {
+        const [result] = await db.sequelize.query(`
+            UPDATE activity_sessions 
+            SET total_active_seconds = 0, total_idle_seconds = 0, 
+                status = 'offline', check_out_at = NOW()
+            WHERE total_idle_seconds > 86400 OR total_active_seconds > 86400;
+        `);
+        res.json({ success: true, message: 'Corrupted sessions reset', affectedRows: result.affectedRows || 0 });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 
 // Device Routes
 router.get('/devices/scan', deviceController.scanNetwork);
